@@ -1,0 +1,21 @@
+package com.example.vertexSpace.enums;
+
+public enum NotificationType {
+    // Booking events
+    BOOKING_CONFIRMED,
+    BOOKING_CANCELLED,
+    BOOKING_REMINDER,
+
+    // Waitlist events
+    WAITLIST_ADDED,
+    WAITLIST_POSITION_CHANGED,
+    WAITLIST_OFFER_RECEIVED,
+    WAITLIST_OFFER_ACCEPTED,
+    WAITLIST_OFFER_DECLINED,
+    WAITLIST_OFFER_EXPIRED,
+
+    // System events
+    RESOURCE_AVAILABLE,
+    MAINTENANCE_SCHEDULED,
+    SYSTEM_ANNOUNCEMENT
+}
