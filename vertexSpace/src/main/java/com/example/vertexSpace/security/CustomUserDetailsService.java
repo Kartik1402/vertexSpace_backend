@@ -19,10 +19,6 @@ import java.util.UUID;
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
-
-    /**
-     * Load user by email (used for login)
-     */
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
@@ -32,9 +28,6 @@ public class CustomUserDetailsService implements UserDetailsService {
         return UserPrincipal.create(user);
     }
 
-    /**
-     * Load user by ID (used for JWT token validation)
-     */
     @Transactional(readOnly = true)
     public UserDetails loadUserById(UUID userId) throws UsernameNotFoundException {
         User user = userRepository.findById(userId)

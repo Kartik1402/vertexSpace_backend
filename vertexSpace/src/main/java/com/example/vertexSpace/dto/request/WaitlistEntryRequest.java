@@ -8,10 +8,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
 import java.util.UUID;
-
-/**
- * Request DTO for creating a waitlist entry
- */
 @Data
 @Builder
 @NoArgsConstructor

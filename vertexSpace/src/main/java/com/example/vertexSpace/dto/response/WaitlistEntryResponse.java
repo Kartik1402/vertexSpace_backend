@@ -9,9 +9,6 @@ import lombok.NoArgsConstructor;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Response DTO for waitlist entry
- */
 @Data
 @Builder
 @NoArgsConstructor

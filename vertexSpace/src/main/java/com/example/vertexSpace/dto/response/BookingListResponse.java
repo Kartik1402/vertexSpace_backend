@@ -7,9 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-/**
- * Response DTO for list of bookings with metadata
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

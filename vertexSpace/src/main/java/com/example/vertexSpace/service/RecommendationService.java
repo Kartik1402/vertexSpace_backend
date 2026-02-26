@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -33,13 +34,25 @@ public class RecommendationService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
     }
 
+    private static Instant toInstant(Object v) {
+        if (v == null) return null;
+        if (v instanceof Instant i) return i;
+        if (v instanceof Timestamp ts) return ts.toInstant();
+        if (v instanceof java.util.Date d) return d.toInstant();
+        if (v instanceof String s) {
+            try { return Instant.parse(s); } catch (Exception ignored) { return null; }
+        }
+        return null;
+    }
+
     @Transactional(readOnly = true)
     public RecommendationResponseDTO getMyRecommendations(UUID currentUserId) {
         User currentUser = requireUser(currentUserId);
 
         log.info("Getting recommendations for user {}", currentUser.getEmail());
 
-        Instant since = Instant.now().minus(ANALYSIS_DAYS, ChronoUnit.DAYS);
+        final Instant now = Instant.now();
+        final Instant since = now.minus(ANALYSIS_DAYS, ChronoUnit.DAYS);
 
         List<Object[]> results = blockRepo.findTopBookedResources(currentUser.getId(), since);
 
@@ -47,12 +60,19 @@ public class RecommendationService {
         for (Object[] row : results) {
             if (recommendations.size() >= MAX_RECOMMENDATIONS) break;
 
+            Instant lastBookedAt = toInstant(row.length > 4 ? row[4] : null);
+
+            // Enforce: 0 <= (now - lastBookedAt) <= 30 days
+            if (lastBookedAt == null) continue;
+            if (lastBookedAt.isAfter(now)) continue;      // negative diff not allowed
+            if (lastBookedAt.isBefore(since)) continue;   // older than 30 days not allowed
+
             recommendations.add(RecommendationItemDTO.builder()
                     .resourceId((UUID) row[0])
                     .resourceName((String) row[1])
                     .resourceType((String) row[2])
                     .bookingCount((Long) row[3])
-                    .lastBookedAt((Instant) row[4])
+                    .lastBookedAt(lastBookedAt)
                     .build());
         }
 

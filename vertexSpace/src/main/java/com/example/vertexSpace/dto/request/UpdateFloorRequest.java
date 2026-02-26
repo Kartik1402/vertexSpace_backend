@@ -6,12 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.UUID;
-
-/**
- * Request DTO for updating a floor
- * All fields are optional
- * SYSTEM_ADMIN only
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -68,10 +68,6 @@ public class JwtTokenProvider {
         }
         return false;
     }
-
-    /**
-     * Get signing key from secret
-     */
     private Key getSigningKey() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }

@@ -46,11 +46,6 @@ public class Notification {
     @Column(nullable = false, length = 20)
     @Builder.Default
     private NotificationStatus status = NotificationStatus.UNREAD;
-
-    /**
-     * Additional data (JSON format) - booking IDs, resource info, etc.
-     * ✅ Changed to EAGER fetch to prevent lazy initialization errors
-     */
     @ElementCollection(fetch = FetchType.EAGER)  // ✅ ADD THIS
     @CollectionTable(name = "notification_metadata", joinColumns = @JoinColumn(name = "notification_id"))
     @MapKeyColumn(name = "key")

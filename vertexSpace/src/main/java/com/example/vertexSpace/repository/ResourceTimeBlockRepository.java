@@ -17,31 +17,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Repository for ResourceTimeBlock entity
- *
- * Includes methods for:
- * - Milestone 2: Booking CRUD and conflict detection
- * - Milestone 3: Waitlist offers and expiry management
- */
 @Repository
 public interface ResourceTimeBlockRepository extends JpaRepository<ResourceTimeBlock, UUID> {
 
-    // ========================================================================
-    // MILESTONE 2: BOOKING METHODS
-    // ========================================================================
-
-    /**
-     * Lock resource for booking (pessimistic lock to prevent race conditions)
-     * Returns the Resource entity, not ResourceTimeBlock
-     */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT r FROM Resource r WHERE r.id = :resourceId")
     Optional<Resource> lockResourceForBooking(@Param("resourceId") UUID resourceId);
 
-    /**
-     * Check if resource has overlapping blocks in time range
-     */
     @Query("""
         SELECT COUNT(b) > 0
         FROM ResourceTimeBlock b
@@ -56,9 +38,6 @@ public interface ResourceTimeBlockRepository extends JpaRepository<ResourceTimeB
             @Param("endTime") Instant endTime
     );
 
-    /**
-     * Find overlapping blocks (for conflict messages)
-     */
     @Query("""
         SELECT b FROM ResourceTimeBlock b
         WHERE b.resource.id = :resourceId
@@ -73,22 +52,21 @@ public interface ResourceTimeBlockRepository extends JpaRepository<ResourceTimeB
             @Param("endTime") Instant endTime
     );
 
-    /**
-     * Check if user has overlapping booking (prevent double-booking)
-     */
     @Query("""
         SELECT COUNT(b) > 0
         FROM ResourceTimeBlock b
         WHERE b.user.id = :userId
           AND b.blockType = 'BOOKING'
           AND b.status = 'CONFIRMED'
+          AND b.resource.id = :resourceId
           AND b.startTimeUtc < :endTime
           AND b.conflictEndUtc > :startTime
         """)
     boolean userHasOverlappingBooking(
             @Param("userId") UUID userId,
             @Param("startTime") Instant startTime,
-            @Param("endTime") Instant endTime
+            @Param("endTime") Instant endTime,
+            @Param("resourceId") UUID resourceId
     );
     @Query("""
     SELECT COUNT(b)
@@ -99,12 +77,6 @@ public interface ResourceTimeBlockRepository extends JpaRepository<ResourceTimeB
       AND b.endTimeUtc > CURRENT_TIMESTAMP
     """)
     long countActiveBookings(@Param("resourceId") UUID resourceId);
-    /**
-     * Find booking by ID with relations (eager fetch to avoid N+1)
-     */
-    /**
-     * Find conflicting time blocks for a resource
-     */
     @Query("""
     SELECT tb FROM ResourceTimeBlock tb
     WHERE tb.resource.id = :resourceId
@@ -128,10 +100,6 @@ public interface ResourceTimeBlockRepository extends JpaRepository<ResourceTimeB
         WHERE b.id = :bookingId
         """)
     Optional<ResourceTimeBlock> findByIdWithRelations(@Param("bookingId") UUID bookingId);
-
-    /**
-     * Find all user bookings (all statuses, all times)
-     */
     @Query("""
         SELECT b FROM ResourceTimeBlock b
         JOIN FETCH b.resource r
@@ -142,10 +110,6 @@ public interface ResourceTimeBlockRepository extends JpaRepository<ResourceTimeB
         ORDER BY b.startTimeUtc DESC
         """)
     List<ResourceTimeBlock> findUserBookings(@Param("userId") UUID userId);
-
-    /**
-     * Find user's upcoming bookings (after current time)
-     */
     @Query("""
         SELECT b FROM ResourceTimeBlock b
         JOIN FETCH b.resource r
@@ -162,9 +126,6 @@ public interface ResourceTimeBlockRepository extends JpaRepository<ResourceTimeB
             @Param("now") Instant now
     );
 
-    /**
-     * Find user's past bookings (before current time)
-     */
     @Query("""
         SELECT b FROM ResourceTimeBlock b
         JOIN FETCH b.resource r
@@ -179,10 +140,6 @@ public interface ResourceTimeBlockRepository extends JpaRepository<ResourceTimeB
             @Param("userId") UUID userId,
             @Param("now") Instant now
     );
-
-    /**
-     * Find all bookings for a resource
-     */
     @Query("""
         SELECT b FROM ResourceTimeBlock b
         JOIN FETCH b.user
@@ -191,10 +148,6 @@ public interface ResourceTimeBlockRepository extends JpaRepository<ResourceTimeB
         ORDER BY b.startTimeUtc DESC
         """)
     List<ResourceTimeBlock> findResourceBookings(@Param("resourceId") UUID resourceId);
-
-    /**
-     * Find resource bookings in time range
-     */
     @Query("""
         SELECT b FROM ResourceTimeBlock b
         JOIN FETCH b.user
@@ -210,10 +163,6 @@ public interface ResourceTimeBlockRepository extends JpaRepository<ResourceTimeB
             @Param("startTime") Instant startTime,
             @Param("endTime") Instant endTime
     );
-
-    /**
-     * Cancel booking (update to CANCELLED status)
-     */
     @Modifying
     @Query("""
         UPDATE ResourceTimeBlock b
@@ -226,10 +175,6 @@ public interface ResourceTimeBlockRepository extends JpaRepository<ResourceTimeB
             @Param("bookingId") UUID bookingId,
             @Param("cancelledAt") Instant cancelledAt
     );
-
-    /**
-     * Find all bookings (admin view)
-     */
     @Query("""
         SELECT b FROM ResourceTimeBlock b
         JOIN FETCH b.resource r
@@ -256,10 +201,6 @@ public interface ResourceTimeBlockRepository extends JpaRepository<ResourceTimeB
         ORDER BY b.startTimeUtc DESC
         """)
     List<ResourceTimeBlock> findDepartmentBookings(@Param("departmentId") UUID departmentId);
-
-    // ========================================================================
-    // MILESTONE 2: HELPER METHOD (used internally by conflict detection)
-    // ========================================================================
 
     /**
      * Check if resource has conflicting blocks (used by BookingValidator)
@@ -310,10 +251,6 @@ public interface ResourceTimeBlockRepository extends JpaRepository<ResourceTimeB
             @Param("userId") UUID userId,
             @Param("status") BlockStatus status
     );
-
-    /**
-     * Find all blocks for resource in time range (including OFFERED)
-     */
     @Query("""
         SELECT b FROM ResourceTimeBlock b
         WHERE b.resource.id = :resourceId
@@ -327,27 +264,10 @@ public interface ResourceTimeBlockRepository extends JpaRepository<ResourceTimeB
             @Param("startTime") Instant startTime,
             @Param("endTime") Instant endTime
     );
-
-    // ========================================================================
-    // MILESTONE 3: WAITLIST & OFFER METHODS
-    // ========================================================================
-
-    /**
-     * Find with pessimistic lock (for offer acceptance)
-     *
-     * Locks row to prevent race conditions during offer processing.
-     * Used in acceptOffer() transaction.
-     */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT b FROM ResourceTimeBlock b WHERE b.id = :id")
     Optional<ResourceTimeBlock> findByIdForUpdate(@Param("id") UUID id);
 
-    /**
-     * Check conflict excluding specific block (for offer acceptance)
-     *
-     * Used to verify slot is still available when accepting offer.
-     * Excludes the offer itself from conflict check.
-     */
     @Query("""
         SELECT COUNT(b) > 0
         FROM ResourceTimeBlock b
@@ -363,16 +283,6 @@ public interface ResourceTimeBlockRepository extends JpaRepository<ResourceTimeB
             @Param("endTime") Instant endTime,
             @Param("excludeId") UUID excludeId
     );
-
-    /**
-     * Find user's active offers (for GET /api/v1/me/waitlist-offers)
-     *
-     * Returns offers that:
-     * - Belong to user
-     * - Are OFFER_HOLD type
-     * - Status is OFFERED
-     * - Haven't expired yet
-     */
     @Query("""
         SELECT b FROM ResourceTimeBlock b
         JOIN FETCH b.resource r
@@ -388,13 +298,6 @@ public interface ResourceTimeBlockRepository extends JpaRepository<ResourceTimeB
             @Param("userId") UUID userId,
             @Param("now") Instant now
     );
-
-    /**
-     * Find expired offers (for scheduler)
-     *
-     * Returns OFFERED blocks past their expiry time.
-     * Scheduler processes these every minute.
-     */
     @Query("""
         SELECT b FROM ResourceTimeBlock b
         JOIN FETCH b.resource r
@@ -404,10 +307,6 @@ public interface ResourceTimeBlockRepository extends JpaRepository<ResourceTimeB
           AND b.expiresAtUtc <= :now
         """)
     List<ResourceTimeBlock> findExpiredOffers(@Param("now") Instant now);
-
-    /**
-     * Find offer by waitlist entry ID
-     */
     @Query("""
         SELECT b FROM ResourceTimeBlock b
         WHERE b.waitlistEntryId = :waitlistEntryId
@@ -418,11 +317,6 @@ public interface ResourceTimeBlockRepository extends JpaRepository<ResourceTimeB
             @Param("blockType") BlockType blockType
     );
 
-    /**
-     * Count user's confirmed bookings in date range (for recommendations)
-     *
-     * Returns aggregated data: resource info + booking count + last booked time
-     */
     @Query("""
         SELECT b.resource.id AS resourceId,
                b.resource.name AS resourceName,
@@ -441,11 +335,6 @@ public interface ResourceTimeBlockRepository extends JpaRepository<ResourceTimeB
             @Param("userId") UUID userId,
             @Param("since") Instant since
     );
-
-    /**
-     * Cancel all active offers for specific waitlist entry
-     * Used when user leaves waitlist
-     */
     @Modifying
     @Query("""
         UPDATE ResourceTimeBlock b
@@ -460,9 +349,6 @@ public interface ResourceTimeBlockRepository extends JpaRepository<ResourceTimeB
             @Param("waitlistEntryId") UUID waitlistEntryId,
             @Param("respondedAt") Instant respondedAt
     );
-    /**
-     * Find all bookings in a recurring series, ordered by occurrence number
-     */
     @Query("""
     SELECT b FROM ResourceTimeBlock b
     JOIN FETCH b.resource r
@@ -473,10 +359,6 @@ public interface ResourceTimeBlockRepository extends JpaRepository<ResourceTimeB
     ORDER BY b.occurrenceNumber ASC
     """)
     List<ResourceTimeBlock> findByRecurringSeriesIdOrderByOccurrenceNumber(@Param("seriesId") UUID seriesId);
-
-    /**
-     * Find future bookings in a recurring series
-     */
     @Query("""
     SELECT b FROM ResourceTimeBlock b
     WHERE b.recurringSeriesId = :seriesId
@@ -488,10 +370,6 @@ public interface ResourceTimeBlockRepository extends JpaRepository<ResourceTimeB
             @Param("seriesId") UUID seriesId,
             @Param("afterTime") Instant afterTime
     );
-
-    /**
-     * Count bookings in a series
-     */
     @Query("SELECT COUNT(b) FROM ResourceTimeBlock b WHERE b.recurringSeriesId = :seriesId")
     long countByRecurringSeriesId(@Param("seriesId") UUID seriesId);
 

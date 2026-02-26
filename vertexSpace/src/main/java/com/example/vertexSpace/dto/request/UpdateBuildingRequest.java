@@ -4,12 +4,6 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-/**
- * Request DTO for updating a building
- * All fields are optional (only provided fields will be updated)
- * SYSTEM_ADMIN only
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

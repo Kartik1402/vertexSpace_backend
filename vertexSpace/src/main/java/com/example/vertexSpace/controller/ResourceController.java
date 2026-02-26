@@ -48,11 +48,6 @@ public class ResourceController {
 
     private final ResourceService resourceService;
     private final AuthService authService;
-    /**
-     * Create a new resource
-     * POST /api/v1/resources
-     * Role: SYSTEM_ADMIN or DEPT_ADMIN (own department only)
-     */
     @PostMapping
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'DEPT_ADMIN')")
     @Operation(summary = "Create resource", description = "Create a new resource (SYSTEM_ADMIN or DEPT_ADMIN)")
@@ -65,12 +60,6 @@ public class ResourceController {
         ResourceResponse response = resourceService.createResource(request, currentUserId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
-
-    /**
-     * Get resource by ID
-     * GET /api/v1/resources/{id}
-     * Role: Authenticated users
-     */
     @GetMapping("/{id}")
     @Operation(summary = "Get resource by ID", description = "Retrieve resource details by ID")
     public ResponseEntity<ResourceResponse> getResourceById(@PathVariable("id") UUID resourceId) {
@@ -78,12 +67,6 @@ public class ResourceController {
         ResourceResponse response = resourceService.getResourceById(resourceId);
         return ResponseEntity.ok(response);
     }
-
-    /**
-     * Get resources with filters
-     * GET /api/v1/resources?type=ROOM&buildingId=xxx&minCapacity=10&available=true&startTime=xxx&endTime=xxx
-     * Role: Authenticated users
-     */
     @GetMapping
     @Operation(summary = "Get resources", description = "Search resources with optional filters")
     public ResponseEntity<ResourceListResponse> getResources(
@@ -107,11 +90,6 @@ public class ResourceController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Get resources by type
-     * GET /api/v1/resources/type/{type}
-     * Role: Authenticated users
-     */
     @GetMapping("/type/{type}")
     @Operation(summary = "Get resources by type", description = "Retrieve resources of specific type (ROOM, DESK, PARKING)")
     public ResponseEntity<ResourceListResponse> getResourcesByType(@PathVariable("type") ResourceType type) {
@@ -120,11 +98,6 @@ public class ResourceController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Get resources by department
-     * GET /api/v1/resources/department/{departmentId}
-     * Role: Authenticated users
-     */
     @GetMapping("/department/{departmentId}")
     @Operation(summary = "Get resources by department", description = "Retrieve resources owned by specific department")
     public ResponseEntity<ResourceListResponse> getResourcesByDepartment(
@@ -150,24 +123,13 @@ public class ResourceController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Get resource statistics
-     * GET /api/v1/resources/{id}/statistics
-     * Role: Authenticated users
-     */
-    @GetMapping("/{id}/statistics")
+  @GetMapping("/{id}/statistics")
     @Operation(summary = "Get resource statistics", description = "Get usage statistics for resource")
     public ResponseEntity<ResourceStatisticsResponse> getResourceStatistics(@PathVariable("id") UUID resourceId) {
         log.info("REST: Fetching statistics for resource: {}", resourceId);
         ResourceStatisticsResponse response = resourceService.getResourceStatistics(resourceId);
         return ResponseEntity.ok(response);
     }
-
-    /**
-     * Update resource
-     * PUT /api/v1/resources/{id}
-     * Role: SYSTEM_ADMIN or DEPT_ADMIN (own department only)
-     */
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'DEPT_ADMIN')")
     @Operation(summary = "Update resource", description = "Update resource details (SYSTEM_ADMIN or DEPT_ADMIN)")
@@ -182,11 +144,6 @@ public class ResourceController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Delete resource (soft delete)
-     * DELETE /api/v1/resources/{id}
-     * Role: SYSTEM_ADMIN or DEPT_ADMIN (own department only)
-     */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'DEPT_ADMIN')")
     @Operation(summary = "Delete resource", description = "Soft delete resource (SYSTEM_ADMIN or DEPT_ADMIN)")

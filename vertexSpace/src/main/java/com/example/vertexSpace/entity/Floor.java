@@ -9,11 +9,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 import java.util.UUID;
-
-/**
- * Entity representing a floor within a building
- * Managed by System Admins only
- */
 @Entity
 @Table(
         name = "floors",
@@ -36,10 +31,10 @@ public class Floor {
     private Building building;
 
     @Column(name = "floor_number", nullable = false)
-    private Integer floorNumber;  // Can be negative for basements (e.g., -1, -2)
+    private Integer floorNumber;
 
     @Column(name = "floor_name", nullable = false, length = 100)
-    private String floorName;  // e.g., "Ground Floor", "1st Floor", "Basement Level 1"
+    private String floorName;
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;

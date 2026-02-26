@@ -9,10 +9,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
-/**
- * Request DTO for creating a new floor
- * SYSTEM_ADMIN only
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

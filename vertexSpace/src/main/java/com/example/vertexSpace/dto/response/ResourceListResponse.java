@@ -8,9 +8,6 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Response DTO for list of resources with statistics
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

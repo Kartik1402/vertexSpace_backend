@@ -9,9 +9,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Response DTO for resource availability check
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

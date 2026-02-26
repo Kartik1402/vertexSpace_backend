@@ -10,13 +10,6 @@ import org.springframework.stereotype.Component;
 import java.time.*;
 import java.util.ArrayList;
 import java.util.List;
-
-/**
- * Utility for generating recurring booking occurrences
- *
- * Converts user's timezone-aware requests into a list of occurrence dates
- * Example: "Every Monday 2-4 PM IST for 12 weeks" → [Mar 3, Mar 10, Mar 17, ...]
- */
 @Component
 @Slf4j
 public class RecurrenceGenerator {
@@ -24,12 +17,6 @@ public class RecurrenceGenerator {
     private static final int MAX_OCCURRENCES = 52;  // 1 year max
     private static final int MAX_SEARCH_DAYS = 730; // 2 years max search range
 
-    /**
-     * Generate all occurrence dates based on recurrence pattern
-     *
-     * @param tz The recurring booking request
-     * @return List of occurrence timestamps (in original timezone)
-     */
     private ZoneId parseTimezone(String tz) {
         if (tz == null || tz.isBlank() || "string".equalsIgnoreCase(tz.trim())) {
             throw new ValidationException("timezone is required (e.g., 'UTC', 'Asia/Kolkata')");
@@ -81,10 +68,6 @@ public class RecurrenceGenerator {
         return occurrences;
     }
 
-    /**
-     * Generate weekly occurrences
-     * Example: Every Monday and Wednesday for 12 weeks
-     */
     private List<LocalDateTime> generateWeeklyOccurrences(
             LocalDateTime start,
             LocalDateTime limit,
@@ -93,13 +76,14 @@ public class RecurrenceGenerator {
 
         List<LocalDateTime> occurrences = new ArrayList<>();
         LocalDateTime current = start;
+        LocalDateTime now = LocalDateTime.now(start.atZone(ZoneOffset.UTC).getZone());
         int daysSearched = 0;
 
         while (current.isBefore(limit) &&
                 (maxOccurrences == null || occurrences.size() < maxOccurrences) &&
                 daysSearched < MAX_SEARCH_DAYS) {
 
-            if (daysOfWeek.contains(current.getDayOfWeek())) {
+            if (daysOfWeek.contains(current.getDayOfWeek())&&current.isAfter(now)) {
                 occurrences.add(current);
             }
             current = current.plusDays(1);
@@ -108,11 +92,6 @@ public class RecurrenceGenerator {
 
         return occurrences;
     }
-
-    /**
-     * Generate daily occurrences
-     * Example: Every day for 30 days
-     */
     private List<LocalDateTime> generateDailyOccurrences(
             LocalDateTime start,
             LocalDateTime limit,
@@ -120,24 +99,21 @@ public class RecurrenceGenerator {
 
         List<LocalDateTime> occurrences = new ArrayList<>();
         LocalDateTime current = start;
+        LocalDateTime now = LocalDateTime.now(start.atZone(ZoneOffset.UTC).getZone());
         int count = 0;
 
         while (current.isBefore(limit) &&
                 (maxOccurrences == null || count < maxOccurrences) &&
                 count < MAX_SEARCH_DAYS) {
-
-            occurrences.add(current);
+            if(current.isAfter(now)) {
+                occurrences.add(current);
+            }
             current = current.plusDays(1);
             count++;
         }
 
         return occurrences;
     }
-
-    /**
-     * Generate monthly occurrences
-     * Example: 15th of every month for 6 months
-     */
     private List<LocalDateTime> generateMonthlyOccurrences(
             LocalDateTime start,
             LocalDateTime limit,
@@ -146,13 +122,17 @@ public class RecurrenceGenerator {
 
         List<LocalDateTime> occurrences = new ArrayList<>();
         LocalDateTime current = adjustToTargetDay(start, dayOfMonth);
+        LocalDateTime now = LocalDateTime.now(start.atZone(ZoneOffset.UTC).getZone());
+
         int count = 0;
 
         while (current.isBefore(limit) &&
                 (maxOccurrences == null || count < maxOccurrences) &&
                 count < MAX_OCCURRENCES) {
 
-            occurrences.add(current);
+            if(current.isAfter(now)) {
+                occurrences.add(current);
+            }
             current = current.plusMonths(1);
 
             // Handle months with fewer days (e.g., Feb 30 → Feb 28)
@@ -162,20 +142,11 @@ public class RecurrenceGenerator {
 
         return occurrences;
     }
-
-    /**
-     * Adjust date to target day of month, handling edge cases
-     * Example: dayOfMonth=31 in February → February 28/29
-     */
     private LocalDateTime adjustToTargetDay(LocalDateTime dateTime, int dayOfMonth) {
         int maxDayInMonth = dateTime.toLocalDate().lengthOfMonth();
         int targetDay = Math.min(dayOfMonth, maxDayInMonth);
         return dateTime.withDayOfMonth(targetDay);
     }
-
-    /**
-     * Calculate search limit based on end condition
-     */
     private LocalDateTime calculateSearchLimit(
             CreateRecurringBookingRequest request,
             LocalDateTime start,
@@ -188,17 +159,9 @@ public class RecurrenceGenerator {
         // For OCCURRENCES or NEVER: default to 2 years max
         return start.plusYears(2);
     }
-
-    /**
-     * Convert LocalDateTime (in user's timezone) to Instant (UTC)
-     */
     public Instant toUTC(LocalDateTime localDateTime, String timezone) {
         return localDateTime.atZone(ZoneId.of(timezone)).toInstant();
     }
-
-    /**
-     * Convert Instant (UTC) to LocalDateTime (in user's timezone)
-     */
     public LocalDateTime toLocalTime(Instant instant, String timezone) {
         return LocalDateTime.ofInstant(instant, ZoneId.of(timezone));
     }

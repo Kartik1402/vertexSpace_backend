@@ -12,10 +12,6 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UpdateDeskAssignmentRequestDTO {
-
-    /**
-     * New end date (null = make indefinite, set value = set end date)
-     */
     private Instant endUtc;
 
     private String notes;

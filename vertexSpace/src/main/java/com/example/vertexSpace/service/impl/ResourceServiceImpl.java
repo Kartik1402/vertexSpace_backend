@@ -38,13 +38,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * Implementation of ResourceService
- *
- * UPDATED FOR MILESTONE 3:
- * - Fixed repository method calls to match new signatures
- * - Added support for feature-based filtering
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -172,7 +165,6 @@ public class ResourceServiceImpl implements ResourceService {
             resources = resourceRepository.findByIsActiveTrue();
         } else if (filterRequest.getAvailable() != null && filterRequest.getAvailable()) {
             // ⚠️ NOTE: This uses the OLD method signature (findAvailableByFilters)
-            // If you want to use Milestone 3 filtering with features, you'll need to
             // modify this or create a separate endpoint
             resources = resourceRepository.findAvailableByFilters(
                     filterRequest.getType(),
@@ -184,18 +176,16 @@ public class ResourceServiceImpl implements ResourceService {
                     filterRequest.getEndTime()
             );
         } else {
-            // ✅ FIXED: Use new Milestone 3 method signature
-            // Convert ResourceType enum to String if needed
             String typeString = filterRequest.getType() != null
                     ? filterRequest.getType().name()
                     : null;
 
             resources = resourceRepository.findByFilters(
-                    filterRequest.getType(), // ✅ FIXED: was "filterRequest.ge" (typo)
+                    filterRequest.getType(),
                     filterRequest.getFloorId(),
                     filterRequest.getBuildingId(),
                     filterRequest.getDepartmentId(),
-                    filterRequest.getMinCapacity()// featureIds - not supported in this endpoint yet
+                    filterRequest.getMinCapacity()
             );
         }
 

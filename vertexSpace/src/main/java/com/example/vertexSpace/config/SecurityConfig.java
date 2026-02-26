@@ -50,7 +50,10 @@ public class SecurityConfig {
                                 "/swagger-resources/**",
                                 "/webjars/**"
                         ).permitAll()
-                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/v1/auth/login").permitAll()
+                        .requestMatchers("api/v1/auth/register").permitAll()
+                        .requestMatchers("/api/v1/auth/me").authenticated()
+                        .requestMatchers("api/v1/auth/logout").authenticated()
 
                         // ============================================================
                         // BUILDINGS
@@ -83,7 +86,7 @@ public class SecurityConfig {
                         // BOOKINGS (order matters)
                         // ============================================================
 
-                        .requestMatchers(HttpMethod.GET, "/api/v1/bookings/all").hasRole("SYSTEM_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/bookings/all").hasAnyRole("SYSTEM_ADMIN","DEPT_ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/v1/bookings/user/**").hasRole("SYSTEM_ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/v1/bookings/resource/**").hasAnyRole("SYSTEM_ADMIN", "DEPT_ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/v1/bookings/department/**").hasAnyRole("SYSTEM_ADMIN", "DEPT_ADMIN")

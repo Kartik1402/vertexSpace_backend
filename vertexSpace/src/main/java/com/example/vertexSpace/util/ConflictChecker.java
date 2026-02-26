@@ -7,22 +7,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Utility class for checking time conflicts between bookings
- */
 @Component
 public class ConflictChecker {
-
-    /**
-     * Check if two time ranges overlap
-     * Uses conflict end time (includes buffer)
-     *
-     * @param start1 First range start
-     * @param conflictEnd1 First range conflict end (end + buffer)
-     * @param start2 Second range start
-     * @param conflictEnd2 Second range conflict end (end + buffer)
-     * @return true if ranges overlap
-     */
     public boolean hasOverlap(Instant start1, Instant conflictEnd1,
                               Instant start2, Instant conflictEnd2) {
         // Two ranges overlap if:
@@ -30,10 +16,6 @@ public class ConflictChecker {
         // - Second starts before first ends
         return start1.isBefore(conflictEnd2) && start2.isBefore(conflictEnd1);
     }
-
-    /**
-     * Check if proposed time overlaps with existing blocks
-     */
     public boolean hasConflict(Instant proposedStart, Instant proposedConflictEnd,
                                List<ResourceTimeBlock> existingBlocks) {
         if (existingBlocks == null || existingBlocks.isEmpty()) {
@@ -81,10 +63,6 @@ public class ConflictChecker {
 
         return latestConflictEnd;
     }
-
-    /**
-     * Format conflict message for user
-     */
     public String formatConflictMessage(List<ResourceTimeBlock> conflicts) {
         if (conflicts.isEmpty()) {
             return "No conflicts";

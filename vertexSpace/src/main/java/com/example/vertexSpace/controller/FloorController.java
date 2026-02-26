@@ -18,12 +18,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-/**
- * REST Controller for Floor management
- * Base path: /api/v1/floors
- *
- * All endpoints require SYSTEM_ADMIN role
- */
 @RestController
 @RequestMapping("/api/v1/floors")
 @RequiredArgsConstructor
@@ -33,12 +27,6 @@ import java.util.UUID;
 public class FloorController {
 
     private final FloorService floorService;
-
-    /**
-     * Create a new floor
-     * POST /api/v1/floors
-     * Role: SYSTEM_ADMIN
-     */
     @PostMapping
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     @Operation(summary = "Create floor", description = "Create a new floor in a building (SYSTEM_ADMIN only)")
@@ -48,11 +36,6 @@ public class FloorController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    /**
-     * Get floor by ID
-     * GET /api/v1/floors/{id}
-     * Role: Authenticated users
-     */
     @GetMapping("/{id}")
     @Operation(summary = "Get floor by ID", description = "Retrieve floor details by ID")
     public ResponseEntity<FloorResponse> getFloorById(@PathVariable("id") UUID floorId) {
@@ -60,12 +43,6 @@ public class FloorController {
         FloorResponse response = floorService.getFloorById(floorId);
         return ResponseEntity.ok(response);
     }
-
-    /**
-     * Get all floors
-     * GET /api/v1/floors?activeOnly=true
-     * Role: Authenticated users
-     */
     @GetMapping
     @Operation(summary = "Get all floors", description = "Retrieve list of all floors")
     public ResponseEntity<FloorListResponse> getAllFloors(
@@ -75,11 +52,6 @@ public class FloorController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Get floors by building ID
-     * GET /api/v1/floors/building/{buildingId}?activeOnly=true
-     * Role: Authenticated users
-     */
     @GetMapping("/building/{buildingId}")
     @Operation(summary = "Get floors by building", description = "Retrieve all floors in a specific building")
     public ResponseEntity<FloorListResponse> getFloorsByBuildingId(
@@ -89,12 +61,6 @@ public class FloorController {
         FloorListResponse response = floorService.getFloorsByBuildingId(buildingId, activeOnly);
         return ResponseEntity.ok(response);
     }
-
-    /**
-     * Update floor
-     * PUT /api/v1/floors/{id}
-     * Role: SYSTEM_ADMIN
-     */
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     @Operation(summary = "Update floor", description = "Update floor details (SYSTEM_ADMIN only)")
@@ -105,12 +71,6 @@ public class FloorController {
         FloorResponse response = floorService.updateFloor(floorId, request);
         return ResponseEntity.ok(response);
     }
-
-    /**
-     * Delete floor (soft delete)
-     * DELETE /api/v1/floors/{id}
-     * Role: SYSTEM_ADMIN
-     */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     @Operation(summary = "Delete floor", description = "Soft delete floor (SYSTEM_ADMIN only)")

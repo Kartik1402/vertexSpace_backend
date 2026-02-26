@@ -12,11 +12,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Request DTO for best-slot algorithm
- *
- * GET /api/v1/availability/best-slots
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

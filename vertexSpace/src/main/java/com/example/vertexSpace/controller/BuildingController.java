@@ -18,12 +18,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-/**
- * REST Controller for Building management
- * Base path: /api/v1/buildings
- *
- * All endpoints require SYSTEM_ADMIN role
- */
 @RestController
 @RequestMapping("/api/v1/buildings")
 @RequiredArgsConstructor
@@ -34,11 +28,6 @@ public class BuildingController {
 
     private final BuildingService buildingService;
 
-    /**
-     * Create a new building
-     * POST /api/v1/buildings
-     * Role: SYSTEM_ADMIN
-     */
     @PostMapping
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     @Operation(summary = "Create building", description = "Create a new building (SYSTEM_ADMIN only)")
@@ -48,11 +37,6 @@ public class BuildingController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    /**
-     * Get building by ID
-     * GET /api/v1/buildings/{id}
-     * Role: Authenticated users
-     */
     @GetMapping("/{id}")
     @Operation(summary = "Get building by ID", description = "Retrieve building details by ID")
     public ResponseEntity<BuildingResponse> getBuildingById(@PathVariable("id") UUID buildingId) {
@@ -61,11 +45,6 @@ public class BuildingController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Get all buildings
-     * GET /api/v1/buildings?activeOnly=true
-     * Role: Authenticated users
-     */
     @GetMapping
     @Operation(summary = "Get all buildings", description = "Retrieve list of all buildings")
     public ResponseEntity<BuildingListResponse> getAllBuildings(
@@ -75,11 +54,6 @@ public class BuildingController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Get buildings by city
-     * GET /api/v1/buildings/city/{city}
-     * Role: Authenticated users
-     */
     @GetMapping("/city/{city}")
     @Operation(summary = "Get buildings by city", description = "Retrieve buildings in specific city")
     public ResponseEntity<BuildingListResponse> getBuildingsByCity(@PathVariable("city") String city) {
@@ -88,11 +62,6 @@ public class BuildingController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Get buildings by state
-     * GET /api/v1/buildings/state/{state}
-     * Role: Authenticated users
-     */
     @GetMapping("/state/{state}")
     @Operation(summary = "Get buildings by state", description = "Retrieve buildings in specific state")
     public ResponseEntity<BuildingListResponse> getBuildingsByState(@PathVariable("state") String state) {
@@ -100,12 +69,6 @@ public class BuildingController {
         BuildingListResponse response = buildingService.getBuildingsByState(state);
         return ResponseEntity.ok(response);
     }
-
-    /**
-     * Update building
-     * PUT /api/v1/buildings/{id}
-     * Role: SYSTEM_ADMIN
-     */
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     @Operation(summary = "Update building", description = "Update building details (SYSTEM_ADMIN only)")

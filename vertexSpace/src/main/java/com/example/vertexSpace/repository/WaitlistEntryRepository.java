@@ -13,26 +13,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Waitlist Entry Repository
- *
- * Key query: findNextInQueue - FIFO ordering for offer generation
- */
 @Repository
 public interface WaitlistEntryRepository extends JpaRepository<WaitlistEntry, UUID> {
-
-    /**
-     * Find next person in queue (FIFO: First In, First Out)
-     *
-     * Returns earliest ACTIVE entry for specific slot.
-     * Used when generating offers after cancellation.
-     *
-     * @param resourceId Which resource
-     * @param startUtc Slot start time
-     * @param endUtc Slot end time
-     * @param status Only ACTIVE entries
-     * @return Next person in line
-     */
     @Query("""
         SELECT w FROM WaitlistEntry w
         WHERE w.resource.id = :resourceId
@@ -48,18 +30,6 @@ public interface WaitlistEntryRepository extends JpaRepository<WaitlistEntry, UU
             @Param("endUtc") Instant endUtc,
             @Param("status") WaitlistStatus status
     );
-
-    /**
-     * Get user's position in queue
-     *
-     * Counts how many people joined before this user.
-     *
-     * @param resourceId Which resource
-     * @param startUtc Slot start
-     * @param endUtc Slot end
-     * @param createdAt User's join time
-     * @return Number of people ahead + 1 = position
-     */
     @Query("""
         SELECT COUNT(w) + 1
         FROM WaitlistEntry w
@@ -75,12 +45,6 @@ public interface WaitlistEntryRepository extends JpaRepository<WaitlistEntry, UU
             @Param("endUtc") Instant endUtc,
             @Param("createdAt") Instant createdAt
     );
-
-    /**
-     * Check if user already in waitlist for specific slot
-     *
-     * Prevents duplicate entries (also enforced by UNIQUE constraint).
-     */
     boolean existsByResourceIdAndStartUtcAndEndUtcAndUserIdAndStatus(
             UUID resourceId,
             Instant startUtc,
@@ -89,9 +53,7 @@ public interface WaitlistEntryRepository extends JpaRepository<WaitlistEntry, UU
             WaitlistStatus status
     );
 
-    /**
-     * Find user's waitlist entries with filters
-     */
+
     @Query("""
     SELECT we
     FROM WaitlistEntry we
@@ -107,9 +69,6 @@ public interface WaitlistEntryRepository extends JpaRepository<WaitlistEntry, UU
             @Param("status") WaitlistStatus status,
             @Param("startUtc") Instant startUtc
     );
-    /**
-     * Find active entries for past time slots (need to expire)
-     */
     @Query("""
     SELECT we FROM WaitlistEntry we
     WHERE we.status = 'ACTIVE'
@@ -117,9 +76,7 @@ public interface WaitlistEntryRepository extends JpaRepository<WaitlistEntry, UU
     """)
     List<WaitlistEntry> findActiveEntriesForPastTimeSlots(@Param("now") Instant now);
 
-    /**
-     * Find expired offers (status = OFFERED but offerExpiresAt < now)
-     */
+
 //    @Query("""
 //    SELECT we FROM WaitlistEntry we
 //    WHERE we.status = 'OFFERED'
@@ -139,17 +96,11 @@ public interface WaitlistEntryRepository extends JpaRepository<WaitlistEntry, UU
   """, nativeQuery = true)
     List<WaitlistEntry> findExpiredOffers(@Param("now") Instant now);
 
-    /**
-     * Find entries by resource and status, ordered by creation time
-     */
     List<WaitlistEntry> findByResourceIdAndStatusOrderByCreatedAt(
             UUID resourceId,
             WaitlistStatus status
     );
 
-    /**
-     * Count active entries for a resource (for queue position calculation)
-     */
     @Query("""
     SELECT COUNT(we) FROM WaitlistEntry we
     WHERE we.resource.id = :resourceId
@@ -157,12 +108,6 @@ public interface WaitlistEntryRepository extends JpaRepository<WaitlistEntry, UU
     """)
     Integer countActiveEntriesForResource(@Param("resourceId") UUID resourceId);
 
-
-
-
-    /**
-     * Update entry status (for offer fulfillment)
-     */
     @Modifying
     @Query("""
         UPDATE WaitlistEntry w
@@ -188,11 +133,6 @@ public interface WaitlistEntryRepository extends JpaRepository<WaitlistEntry, UU
             @Param("startTime") Instant startTime,
             @Param("endTime") Instant endTime
     );
-    /**
-     * Expire old entries (slots that have passed)
-     *
-     * Called by scheduler to clean up entries for past time slots.
-     */
     @Modifying
     @Query("""
         UPDATE WaitlistEntry w
@@ -202,9 +142,6 @@ public interface WaitlistEntryRepository extends JpaRepository<WaitlistEntry, UU
         """)
     int expireOldEntries(@Param("now") Instant now);
 
-    /**
-     * Get all active entries for a user
-     */
     List<WaitlistEntry> findByUserIdAndStatusOrderByCreatedAtDesc(
             UUID userId,
             WaitlistStatus status

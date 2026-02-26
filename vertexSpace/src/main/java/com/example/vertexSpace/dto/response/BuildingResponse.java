@@ -8,9 +8,6 @@ import lombok.NoArgsConstructor;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Response DTO for building details
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

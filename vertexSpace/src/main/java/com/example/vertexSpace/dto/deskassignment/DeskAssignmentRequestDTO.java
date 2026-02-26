@@ -24,9 +24,6 @@ public class DeskAssignmentRequestDTO {
     @NotNull(message = "Start date is required")
     private Instant startUtc;
 
-    /**
-     * End date (optional - null means indefinite assignment)
-     */
     private Instant endUtc;
 
     private String notes;

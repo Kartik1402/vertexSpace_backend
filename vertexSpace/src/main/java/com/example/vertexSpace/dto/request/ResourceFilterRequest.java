@@ -9,12 +9,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 import java.util.UUID;
-
-/**
- * Request DTO for filtering resources
- * All fields are optional (null = not filtered by that criteria)
- * Used in GET /api/v1/resources endpoint
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

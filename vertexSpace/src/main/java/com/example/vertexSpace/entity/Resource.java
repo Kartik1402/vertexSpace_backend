@@ -12,10 +12,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Entity representing a bookable resource (room, desk, parking)
- * Ownership determines admin permissions, NOT booking restrictions
- */
 @Builder
 @Entity
 @Table(

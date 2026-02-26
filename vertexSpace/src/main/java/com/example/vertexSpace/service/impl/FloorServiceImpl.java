@@ -20,9 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Implementation of FloorService
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j

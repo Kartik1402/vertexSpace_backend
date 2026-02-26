@@ -13,16 +13,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * UNIFIED table for bookings and waitlist offers
- * PostgreSQL exclusion constraint prevents overlapping active blocks
- *
- * UPDATED FOR MILESTONE 3:
- * - Added waitlistEntryId (links back to waitlist_entries)
- * - Added expiresAtUtc (for OFFER_HOLD expiry - 10 minutes)
- * - Added respondedAt (when user accepted/declined offer)
- * - Added notes (optional reason for cancellation/decline)
- */
 @Entity
 @Table(name = "resource_time_blocks")
 @Data
@@ -69,9 +59,6 @@ public class ResourceTimeBlock {
     @Column(columnDefinition = "TEXT")
     private String purpose;  // Optional: why booking was made
 
-    // ========================================================================
-    // MILESTONE 3: NEW FIELDS
-    // ========================================================================
 
     /**
      * Link back to waitlist entry (if this came from waitlist)

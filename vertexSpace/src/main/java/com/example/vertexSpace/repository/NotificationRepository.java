@@ -17,10 +17,6 @@ import java.util.UUID;
 
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
-
-    /**
-     * Find all notifications for a user
-     */
     @Query("""
         SELECT n FROM Notification n
         WHERE n.user.id = :userId
@@ -34,9 +30,6 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
             Pageable pageable
     );
 
-    /**
-     * Find unread notifications for a user
-     */
     @Query("""
         SELECT n FROM Notification n
         WHERE n.user.id = :userId
@@ -50,9 +43,6 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
             @Param("now") Instant now
     );
 
-    /**
-     * Count unread notifications
-     */
     @Query("""
         SELECT COUNT(n) FROM Notification n
         WHERE n.user.id = :userId
@@ -65,9 +55,6 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
             @Param("now") Instant now
     );
 
-    /**
-     * Mark all as read for a user
-     */
     @Modifying
     @Query("""
         UPDATE Notification n
@@ -80,16 +67,9 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
             @Param("readAt") Instant readAt
     );
 
-    /**
-     * Delete old notifications
-     */
     @Modifying
     @Query("DELETE FROM Notification n WHERE n.createdAt < :cutoffDate")
     int deleteOlderThan(@Param("cutoffDate") Instant cutoffDate);
-
-    /**
-     * Find expired notifications to clean up
-     */
     @Query("""
         SELECT n FROM Notification n
         WHERE n.expiresAt IS NOT NULL

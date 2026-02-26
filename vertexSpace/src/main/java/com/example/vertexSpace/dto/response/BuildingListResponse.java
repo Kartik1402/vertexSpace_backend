@@ -7,9 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-/**
- * Response DTO for list of buildings
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

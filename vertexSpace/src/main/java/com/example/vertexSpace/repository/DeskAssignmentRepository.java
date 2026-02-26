@@ -17,9 +17,6 @@ import java.util.UUID;
 @Repository
 public interface DeskAssignmentRepository extends JpaRepository<DeskAssignment, UUID> {
 
-    /**
-     * Find active assignment for a desk at a specific time
-     */
     @Query("""
         SELECT da FROM DeskAssignment da
         WHERE da.resource.id = :deskId
@@ -32,9 +29,7 @@ public interface DeskAssignmentRepository extends JpaRepository<DeskAssignment, 
             @Param("checkTime") Instant checkTime
     );
 
-    /**
-     * Check for overlapping assignments for a desk
-     */
+
     @Query("""
         SELECT COUNT(da) FROM DeskAssignment da
         WHERE da.resource.id = :deskId
@@ -49,10 +44,6 @@ public interface DeskAssignmentRepository extends JpaRepository<DeskAssignment, 
             @Param("endTime") Instant endTime,
             @Param("excludeId") UUID excludeId
     );
-
-    /**
-     * Find all assignments for a desk
-     */
     @Query("""
         SELECT da FROM DeskAssignment da
         WHERE da.resource.id = :deskId
@@ -102,10 +93,6 @@ public interface DeskAssignmentRepository extends JpaRepository<DeskAssignment, 
             @Param("departmentId") UUID departmentId,
             Pageable pageable
     );
-
-    /**
-     * Count active assignments for a desk
-     */
     @Query("""
         SELECT COUNT(da) FROM DeskAssignment da
         WHERE da.resource.id = :deskId
@@ -118,9 +105,6 @@ public interface DeskAssignmentRepository extends JpaRepository<DeskAssignment, 
             @Param("now") Instant now
     );
 
-    /**
-     * Find assignments expiring soon
-     */
     @Query("""
         SELECT da FROM DeskAssignment da
         WHERE da.isActive = true
@@ -132,10 +116,6 @@ public interface DeskAssignmentRepository extends JpaRepository<DeskAssignment, 
             @Param("startTime") Instant startTime,
             @Param("endTime") Instant endTime
     );
-
-    /**
-     * Soft delete (deactivate) assignment
-     */
     @Modifying
     @Query("""
         UPDATE DeskAssignment da

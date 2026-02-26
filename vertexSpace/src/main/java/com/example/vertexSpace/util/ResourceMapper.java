@@ -7,15 +7,9 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Utility class for mapping entities to DTOs
- */
+
 @Component
 public class ResourceMapper {
-
-    // ========================================================================
-    // BUILDING MAPPERS
-    // ========================================================================
 
     public BuildingResponse toBuildingResponse(Building building) {
         return BuildingResponse.builder()
@@ -38,9 +32,6 @@ public class ResourceMapper {
                 .collect(Collectors.toList());
     }
 
-    // ========================================================================
-    // FLOOR MAPPERS
-    // ========================================================================
 
     public FloorResponse toFloorResponse(Floor floor) {
         return FloorResponse.builder()
@@ -61,9 +52,6 @@ public class ResourceMapper {
                 .collect(Collectors.toList());
     }
 
-    // ========================================================================
-    // RESOURCE MAPPERS
-    // ========================================================================
 
     public ResourceResponse toResourceResponse(Resource resource) {
         return ResourceResponse.builder()
@@ -96,10 +84,6 @@ public class ResourceMapper {
                 .map(this::toResourceResponse)
                 .collect(Collectors.toList());
     }
-
-    // ========================================================================
-    // BOOKING MAPPERS
-    // ========================================================================
 
     public BookingResponse toBookingResponse(ResourceTimeBlock block) {
         return BookingResponse.builder()
@@ -135,10 +119,6 @@ public class ResourceMapper {
                 .map(this::toBookingResponse)
                 .collect(Collectors.toList());
     }
-
-    // ========================================================================
-    // AVAILABILITY MAPPER
-    // ========================================================================
 
     public ResourceAvailabilityResponse.ConflictingBooking toConflictingBooking(ResourceTimeBlock block) {
         return ResourceAvailabilityResponse.ConflictingBooking.builder()

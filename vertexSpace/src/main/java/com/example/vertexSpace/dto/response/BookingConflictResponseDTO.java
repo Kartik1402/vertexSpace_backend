@@ -30,31 +30,11 @@ public class BookingConflictResponseDTO {
      */
     private UUID resourceId;
     private String resourceName;
-
-    /**
-     * The requested time slot
-     */
     private Instant requestedStartTimeUtc;
     private Instant requestedEndTimeUtc;
-
-    /**
-     * Conflicting bookings information
-     */
     private List<ConflictingBooking> conflicts;
-
-    /**
-     * Waitlist information
-     */
     private WaitlistInfo waitlistInfo;
-
-    /**
-     * Alternative available resources
-     */
     private List<ResourceResponse> alternativeResources;
-
-    /**
-     * Suggested alternative time slots
-     */
     private List<TimeSlotSuggestion> suggestedTimeSlots;
 
     @Data
@@ -75,7 +55,6 @@ public class BookingConflictResponseDTO {
     public static class WaitlistInfo {
         private boolean canJoinWaitlist;
         private Integer currentQueueLength;
-        // ❌ REMOVED: estimatedWaitTime - we can't accurately predict cancellations
         private String message;
     }
 
@@ -86,6 +65,6 @@ public class BookingConflictResponseDTO {
     public static class TimeSlotSuggestion {
         private Instant startTimeUtc;
         private Instant endTimeUtc;
-        private String availability;  // "Available now", "Available tomorrow"
+        private String availability; 
     }
 }

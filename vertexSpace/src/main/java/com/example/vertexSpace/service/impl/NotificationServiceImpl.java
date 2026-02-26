@@ -282,10 +282,6 @@ public class NotificationServiceImpl implements NotificationService {
         );
     }
 
-    // ===================================================================
-    // Helper methods
-    // ===================================================================
-
     private int determinePriority(NotificationType type) {
         return switch (type) {
             case WAITLIST_OFFER_RECEIVED -> 4; // Urgent

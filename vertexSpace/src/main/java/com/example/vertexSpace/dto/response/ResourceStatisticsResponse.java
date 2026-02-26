@@ -7,9 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
-/**
- * Response DTO for resource usage statistics
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

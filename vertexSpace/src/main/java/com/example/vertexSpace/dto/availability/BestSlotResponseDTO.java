@@ -8,12 +8,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.util.List;
-
-/**
- * Response DTO for best-slot suggestions
- *
- * GET /api/v1/availability/best-slots
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

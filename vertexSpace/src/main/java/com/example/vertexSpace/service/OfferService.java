@@ -9,19 +9,17 @@ import com.example.vertexSpace.entity.WaitlistEntry;
 import com.example.vertexSpace.enums.BlockStatus;
 import com.example.vertexSpace.enums.BlockType;
 import com.example.vertexSpace.enums.WaitlistStatus;
-import com.example.vertexSpace.exception.AuthorizationException;
-import com.example.vertexSpace.exception.ConflictException;
-import com.example.vertexSpace.exception.InvalidStateException;
-import com.example.vertexSpace.exception.OfferExpiredException;
-import com.example.vertexSpace.exception.ResourceNotFoundException;
+import com.example.vertexSpace.exception.*;
 import com.example.vertexSpace.repository.ResourceTimeBlockRepository;
 import com.example.vertexSpace.repository.UserRepository;
 import com.example.vertexSpace.repository.WaitlistEntryRepository;
+import com.example.vertexSpace.util.BookingValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.vertexSpace.service.impl.NotificationServiceImpl;
+
 
 import java.time.Duration;
 import java.time.Instant;
@@ -56,15 +54,17 @@ public class OfferService {
      * Create offer for waitlist entry (called by WaitlistService.processNextInWaitlist())
      */
     @Transactional
-    public void createOffer(WaitlistEntry entry) {
+    public ResourceTimeBlock createOffer(WaitlistEntry entry) {
         log.info("Creating offer for waitlist entry {}", entry.getId());
 
-        Resource resource = entry.getResource();
+        Resource resource =entry.getResource();
         User user = entry.getUser();
+
 
         Instant now = Instant.now();
         Instant expiresAt = now.plus(OFFER_EXPIRY_MINUTES, ChronoUnit.MINUTES);
 
+        // TODO: Buffer time, purpose, etc. not set here.
         ResourceTimeBlock offer = new ResourceTimeBlock();
         offer.setBlockType(BlockType.OFFER_HOLD);
         offer.setStatus(BlockStatus.OFFERED);
@@ -75,11 +75,13 @@ public class OfferService {
         offer.setWaitlistEntryId(entry.getId());
         offer.setExpiresAtUtc(expiresAt);
 
-        blockRepo.save(offer);
+
+        offer = blockRepo.save(offer);
 
         log.info("Offer created: {} for user {} (expires at {})",
                 offer.getId(), user.getEmail(), expiresAt
         );
+        return offer;
     }
 
     /**
@@ -340,7 +342,7 @@ public class OfferService {
         // TODO: publish event / call WaitlistService via events
     }
     @Transactional
-    public void processWaitlistForCancelledBooking(UUID resourceId, Instant startTime, Instant endTime) {
+    public void processNextInWaitlist(UUID resourceId, Instant startTime, Instant endTime) {
         log.info("Processing waitlist for cancelled booking: resource={}, time={} to {}",
                 resourceId, startTime, endTime);
 
@@ -367,10 +369,12 @@ public class OfferService {
         nextInQueue.setStatus(WaitlistStatus.OFFERED);
         nextInQueue.setOfferedAt(Instant.now());
         nextInQueue.setOfferExpiresAt(Instant.now().plus(Duration.ofMinutes(10)));
-        waitlistRepo.save(nextInQueue);
 
         // Create the offer using your existing method
-        createOffer(nextInQueue);
+        ResourceTimeBlock offer = createOffer(nextInQueue);
+
+        nextInQueue.setPendingBooking(offer);
+        nextInQueue = waitlistRepo.save(nextInQueue);
 
         log.info("Offer sent to user {} for cancelled booking slot", nextInQueue.getUser().getEmail());
 

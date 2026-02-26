@@ -8,11 +8,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 import java.util.UUID;
-
-/**
- * Entity representing a physical building/location
- * Managed by System Admins only
- */
 @Entity
 @Table(name = "buildings")
 @Data

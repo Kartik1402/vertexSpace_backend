@@ -5,11 +5,6 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-/**
- * Request DTO for creating a new building
- * SYSTEM_ADMIN only
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

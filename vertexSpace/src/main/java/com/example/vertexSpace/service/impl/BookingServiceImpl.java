@@ -103,7 +103,8 @@ public class BookingServiceImpl implements BookingService {
         boolean userHasConflict = timeBlockRepository.userHasOverlappingBooking(
                 currentUserId,
                 request.getStartTime(),
-                conflictEndTime
+                conflictEndTime,
+                request.getResourceId()
         );
 
         if (userHasConflict) {
@@ -240,14 +241,14 @@ public class BookingServiceImpl implements BookingService {
             // 5. BUILD RESPONSE
             // ============================================================
             return BookingWithWaitlistResponse.builder()
-                    .pendingBooking(mapper.toBookingResponse(result.pendingBooking()))
+//                    .pendingBooking(mapper.toBookingResponse(result.pendingBooking()))
                     .waitlistEntry(WaitlistEntryResponseDTO.builder()
                             .id(result.waitlistEntry().getId())
                             .resourceId(resource.getId())
                             .resourceName(resource.getName())
                             .userId(result.waitlistEntry().getUser().getId())
                             .userDisplayName(result.waitlistEntry().getUser().getDisplayName())
-                            .pendingBookingId(result.pendingBooking().getId())
+//                            .pendingBookingId(result.pendingBooking().getId())
                             .startUtc(request.getStartTime())
                             .endUtc(request.getEndTime())
                             .purpose(request.getPurpose())
@@ -272,12 +273,12 @@ public class BookingServiceImpl implements BookingService {
 
             // Return minimal response (pending booking and waitlist already saved)
             return BookingWithWaitlistResponse.builder()
-                    .pendingBooking(mapper.toBookingResponse(result.pendingBooking()))
+//                    .pendingBooking(mapper.toBookingResponse(result.pendingBooking()))
                     .waitlistEntry(WaitlistEntryResponseDTO.builder()
                             .id(result.waitlistEntry().getId())
                             .resourceId(resource.getId())
                             .resourceName(resource.getName())
-                            .pendingBookingId(result.pendingBooking().getId())
+//                            .pendingBookingId(result.pendingBooking().getId())
                             .status(result.waitlistEntry().getStatus().name())
                             .queuePosition(result.queuePosition())
                             .message("You're #" + result.queuePosition() + " in the waitlist queue")
@@ -572,7 +573,7 @@ public class BookingServiceImpl implements BookingService {
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + currentUserId));
 
-        if (currentUser.getRole() != Role.SYSTEM_ADMIN) {
+        if (currentUser.getRole() != Role.SYSTEM_ADMIN && currentUser.getRole()!=Role.DEPT_ADMIN) {
             throw new AuthorizationException("Only system administrators can view all bookings");
         }
 
@@ -646,7 +647,7 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + currentUserId));
 
         // Authorization check
-        if (!booking.getUser().getId().equals(currentUserId) && currentUser.getRole() != Role.SYSTEM_ADMIN) {
+        if (!booking.getUser().getId().equals(currentUserId) && currentUser.getRole() != Role.SYSTEM_ADMIN && currentUser.getDepartment().getId()!=booking.getResource().getOwningDepartment().getId()) {
             throw new AuthorizationException("You can only cancel your own bookings");
         }
 
@@ -682,7 +683,7 @@ public class BookingServiceImpl implements BookingService {
         try {
             log.info("Checking waitlist for cancelled slot: resource={}", booking.getResource().getId());
 
-            offerService.processWaitlistForCancelledBooking(
+            offerService.processNextInWaitlist(
                     booking.getResource().getId(),
                     booking.getStartTimeUtc(),
                     booking.getEndTimeUtc()
@@ -824,7 +825,8 @@ public class BookingServiceImpl implements BookingService {
             boolean hasUserConflict = timeBlockRepository.userHasOverlappingBooking(
                     currentUserId,
                     startUTC,
-                    conflictEndUTC
+                    conflictEndUTC,
+                    request.getResourceId()
             );
 
             occurrences.add(BookingOccurrence.builder()
@@ -847,7 +849,7 @@ public class BookingServiceImpl implements BookingService {
                 .toList();
 
         // If strategy is FAIL_ON_CONFLICT and there are ANY conflicts, reject everything
-        if (request.getConflictResolution() == ConflictResolution.FAIL_ON_CONFLICT && !conflicts.isEmpty()) {
+        if (request.getConflictResolution() == ConflictResolution.FAIL_ON_CONFLICTS && !conflicts.isEmpty()) {
             throw new ValidationException(
                     String.format("Cannot create recurring booking: %d out of %d occurrences have conflicts. " +
                                     "Change conflict resolution to SKIP_CONFLICTS to create available bookings only.",

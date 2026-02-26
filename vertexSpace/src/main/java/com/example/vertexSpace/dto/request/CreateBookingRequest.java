@@ -30,9 +30,6 @@ public class CreateBookingRequest {
     @Size(max = 500, message = "Purpose must not exceed 500 characters")
     private String purpose;
 
-    /**
-     * Custom validation: End time must be after start time
-     */
     @AssertTrue(message = "End time must be after start time")
     public boolean isEndTimeAfterStartTime() {
         if (startTime == null || endTime == null) {
@@ -40,10 +37,6 @@ public class CreateBookingRequest {
         }
         return endTime.isAfter(startTime);
     }
-
-    /**
-     * Custom validation: Booking duration should be reasonable (max 8 hours)
-     */
     @AssertTrue(message = "Booking duration cannot exceed 8 hours")
     public boolean isReasonableDuration() {
         if (startTime == null || endTime == null) {

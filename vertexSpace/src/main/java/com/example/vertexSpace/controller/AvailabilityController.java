@@ -41,32 +41,11 @@ public class AvailabilityController {
 
     private final AvailabilityService availabilityService;
 
-    /**
-     * Endpoint 34: Find best available slots (top 5 earliest)
-     *
-     * GET /api/v1/availability/best-slots?dateIst=2025-01-15&durationMinutes=60&type=ROOM
-     *
-     * Algorithm:
-     * 1. Search window: 8 AM - 8 PM IST
-     * 2. Check slots in 15-minute increments
-     * 3. Include 15-minute buffer in conflict detection
-     * 4. Return top 5 earliest available slots
-     * 5. Each slot includes list of available resources
-     */
     @GetMapping("/best-slots")
     @Operation(
             summary = "Find best available slots",
-            description = """
-                AI-powered slot suggestion algorithm.
-                
-                Finds top 5 earliest available slots for given date and duration.
-                
-                Search window: 8 AM - 8 PM IST.
-                Returns slots in 15-minute increments.
-                Includes 15-minute buffer in availability check.
-                
-                Example: /api/v1/availability/best-slots?dateIst=2025-01-15&durationMinutes=60&type=ROOM&capacityMin=10
-                """
+            description = """                
+                Finds top 5 earliest available slots for given date and duration"""
     )
     @ApiResponses({
             @ApiResponse(

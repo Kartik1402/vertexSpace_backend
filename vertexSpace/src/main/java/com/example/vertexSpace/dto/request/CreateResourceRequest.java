@@ -8,12 +8,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.UUID;
-
-/**
- * Request DTO for creating a new resource
- * SYSTEM_ADMIN: can create in any department
- * DEPT_ADMIN: can only create in own department
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

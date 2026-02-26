@@ -10,12 +10,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
-/**
- * Request DTO for updating a resource
- * All fields are optional
- * SYSTEM_ADMIN: can update any resource
- * DEPT_ADMIN: can only update resources in own department
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

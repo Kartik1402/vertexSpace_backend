@@ -8,9 +8,7 @@ import com.example.vertexSpace.entity.User;
 import com.example.vertexSpace.entity.WaitlistEntry;
 import com.example.vertexSpace.dto.request.CreateBookingRequest;
 import com.example.vertexSpace.enums.BlockStatus;
-import com.example.vertexSpace.enums.BlockType;
 import org.springframework.transaction.annotation.Propagation;
-import com.example.vertexSpace.enums.BlockStatus;
 import com.example.vertexSpace.enums.WaitlistStatus;
 import com.example.vertexSpace.exception.AuthorizationException;
 import com.example.vertexSpace.exception.ConflictException;
@@ -29,8 +27,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
-import static com.example.vertexSpace.enums.BlockStatus.DECLINED;
 
 /**
  * Waitlist Service
@@ -58,14 +54,6 @@ public class WaitlistService {
         return userRepo.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
     }
-
-    /**
-     * Join waitlist for unavailable slot (MANUAL join)
-     *
-     * NOTE: Most users will join waitlist automatically when booking fails.
-     * This method is for users who want to manually join waitlist without
-     * attempting to book first.
-     */
     public WaitlistEntryResponseDTO joinWaitlist(
             WaitlistEntryRequestDTO request,
             UUID currentUserId
@@ -343,7 +331,12 @@ public class WaitlistService {
         log.info("Waitlist offer declined: {}", entryId);
 
         // Process next person in queue
-        processNextInWaitlist(
+//        processNextInWaitlist(
+//                entry.getResource().getId(),
+//                entry.getStartUtc(),
+//                entry.getEndUtc()
+//        );
+        offerService.processNextInWaitlist(
                 entry.getResource().getId(),
                 entry.getStartUtc(),
                 entry.getEndUtc()
@@ -507,7 +500,12 @@ public class WaitlistService {
             }
 
             // Process next in queue
-            processNextInWaitlist(
+//            processNextInWaitlist(
+//                    entry.getResource().getId(),
+//                    entry.getStartUtc(),
+//                    entry.getEndUtc()
+//            );
+            offerService.processNextInWaitlist(
                     entry.getResource().getId(),
                     entry.getStartUtc(),
                     entry.getEndUtc()
@@ -656,14 +654,14 @@ public class WaitlistService {
         // ============================================================
         // 4. RETURN RESULT (TRANSACTION COMMITS HERE)
         // ============================================================
-        return new PendingBookingResult(null, savedWaitlist, newQueuePosition);
+        return new PendingBookingResult(/*null, */savedWaitlist, newQueuePosition);
     }
 
     /**
      * Result object containing saved entities
      */
     public record PendingBookingResult(
-            ResourceTimeBlock pendingBooking,
+//            ResourceTimeBlock pendingBooking,
             WaitlistEntry waitlistEntry,
             Integer queuePosition
     ) {}

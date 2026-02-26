@@ -18,9 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Implementation of BuildingService
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j

@@ -25,13 +25,7 @@ import java.util.UUID;
 
 /**
  * REST Controller for Booking management
- * Base path: /api/v1/bookings
- *
- * Access levels:
- * - ALL authenticated users: Can create/view/cancel own bookings
- * - DEPT_ADMIN: Can view bookings for resources in own department
- * - SYSTEM_ADMIN: Full access
- */
+ **/
 @RestController
 @RequestMapping("/api/v1/bookings")
 @RequiredArgsConstructor
@@ -131,7 +125,7 @@ public class BookingController {
      * Role: SYSTEM_ADMIN only
      */
     @GetMapping("/user/{userId}")
-    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN') or hasRole('DEPT_ADMIN')")
     @Operation(summary = "Get user bookings", description = "Retrieve bookings for specific user (SYSTEM_ADMIN only)")
     public ResponseEntity<BookingListResponse> getUserBookings(@PathVariable("userId") UUID userId) {
         log.info("REST: Fetching bookings for user: {}", userId);
@@ -186,7 +180,7 @@ public class BookingController {
      * Role: SYSTEM_ADMIN only
      */
     @GetMapping("/all")
-    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'DEPT_ADMIN')")
     @Operation(summary = "Get all bookings", description = "Retrieve all bookings system-wide (SYSTEM_ADMIN only)")
     public ResponseEntity<BookingListResponse> getAllBookings(Authentication authentication) {
         String currentUserEmail = authentication.getName(); // e.g., kartik50@gmail.com

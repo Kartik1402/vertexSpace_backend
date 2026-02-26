@@ -52,16 +52,6 @@ public class AvailabilityService {
     private static final int SLOT_INCREMENT_MINUTES = 15;
     private static final int BUFFER_MINUTES = 15;
     private static final int MAX_SUGGESTIONS = 5;
-
-    /**
-     * Find best available slots (top 5 earliest)
-     *
-     * GET /api/v1/availability/best-slots
-     *
-     * @param request Search criteria (date, duration, optional filters)
-     * @return Response with up to 5 earliest available slots
-     * @throws ValidationException if date is in past or duration invalid
-     */
     @Transactional(readOnly = true)
     public BestSlotResponseDTO findBestSlots(BestSlotRequestDTO request) {
         log.info("Finding best slots for date {} duration {} minutes with filters: type={}, floor={}, building={}, dept={}, capacity={}",
@@ -114,12 +104,11 @@ public class AvailabilityService {
         }
 
         List<Resource> resources = resourceRepo.findByFilters(
-                resourceType,              // ✅ ResourceType enum (not String)
+                resourceType,
                 request.getFloorId(),
                 request.getBuildingId(),
                 request.getDepartmentId(),
                 request.getCapacityMin()
-                // ❌ NO featureIds parameter - features not supported
         );
 
         log.debug("Found {} matching resources", resources.size());
