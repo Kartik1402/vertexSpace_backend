@@ -58,7 +58,6 @@ public class ResourceServiceImpl implements ResourceService {
         log.info("Creating resource: {} (Type: {}) by user: {}",
                 request.getName(), request.getResourceType(), currentUserId);
 
-        // Get current user for authorization
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + currentUserId));
 
@@ -70,7 +69,6 @@ public class ResourceServiceImpl implements ResourceService {
             throw new ValidationException("Cannot create resource on inactive floor or building");
         }
 
-        // Validate department exists
         Department department = departmentRepository.findById(request.getOwningDepartmentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Department not found with ID: " + request.getOwningDepartmentId()));
 
@@ -93,7 +91,6 @@ public class ResourceServiceImpl implements ResourceService {
             );
         }
 
-        // Validate capacity for ROOM type
         if (request.getResourceType() == ResourceType.ROOM) {
             if (request.getCapacity() == null || request.getCapacity() <= 0) {
                 throw new ValidationException("Capacity is required and must be positive for ROOM type");
@@ -131,11 +128,9 @@ public class ResourceServiceImpl implements ResourceService {
             return AssignmentMode.NOT_APPLICABLE;
         }
 
-        // For desks, use requested mode or default to HOT_DESK
         return requested != null ? requested : AssignmentMode.HOT_DESK;
     }
 
-    // ✅ Validate desk mode
     private void validateDeskMode(AssignmentMode mode) {
         if (mode == AssignmentMode.NOT_APPLICABLE) {
             throw new ValidationException("Desks must be either ASSIGNED or HOT_DESK");

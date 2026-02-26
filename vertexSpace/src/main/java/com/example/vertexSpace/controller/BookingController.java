@@ -37,11 +37,6 @@ public class BookingController {
     private final BookingService bookingService;
     private final AuthService authService;
 
-    /**
-     * Create a new booking
-     * POST /api/v1/bookings
-     * Role: All authenticated users
-     */
     @PostMapping
     @Operation(summary = "Create booking", description = "Create a new booking for a resource")
     public ResponseEntity<BookingResponse> createBooking(
@@ -55,11 +50,6 @@ public class BookingController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    /**
-     * Get booking by ID
-     * GET /api/v1/bookings/{id}
-     * Role: Owner, DEPT_ADMIN (if in department), or SYSTEM_ADMIN
-     */
     @GetMapping("/{id}")
     @Operation(summary = "Get booking by ID", description = "Retrieve booking details by ID")
     public ResponseEntity<BookingResponse> getBookingById(
@@ -151,11 +141,7 @@ public class BookingController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Get bookings for resource in date range
-     * GET /api/v1/bookings/resource/{resourceId}/range?startTime=xxx&endTime=xxx
-     * Role: DEPT_ADMIN (if in department) or SYSTEM_ADMIN
-     */
+
     @GetMapping("/resource/{resourceId}/range")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'DEPT_ADMIN')")
     @Operation(summary = "Get resource bookings in range", description = "Retrieve bookings for resource in date range")
@@ -223,9 +209,7 @@ public class BookingController {
         BookingCancellationResponse response = bookingService.cancelBooking(bookingId, currentUserId);
         return ResponseEntity.ok(response);
     }
-    /**
-     * Create recurring booking
-     */
+
     @PostMapping("/recurring")
     @Operation(
             summary = "Create recurring booking",
@@ -266,9 +250,6 @@ public class BookingController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Cancel entire recurring series (all future occurrences)
-     */
     @DeleteMapping("/recurring/{seriesId}")
     @Operation(
             summary = "Cancel recurring series",

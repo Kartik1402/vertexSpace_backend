@@ -55,28 +55,10 @@ public class BookingServiceImpl implements BookingService {
     private final OfferService offerService;
     private final NotificationServiceImpl notificationService;
     private final RecurrenceGenerator recurrenceGenerator;
-
-    // ========================================================================
-    // CREATE BOOKING - ENHANCED WITH WAITLIST INTEGRATION
-    // ========================================================================
-
-    /**
-     * Create booking with integrated waitlist conflict handling
-     *
-     * Flow:
-     * 1. Validate user and time range
-     * 2. Lock resource (pessimistic lock)
-     * 3. Check for conflicts
-     * 4. If conflict → Auto-join waitlist in SEPARATE transaction + throw exception with details
-     * 5. If available → Create confirmed booking
-     */
     @Override
     public BookingResponse createBooking(CreateBookingRequest request, UUID currentUserId) {
         log.info("Creating booking for resource {} by user {}", request.getResourceId(), currentUserId);
 
-        // ============================================================
-        // STEP 1-5: VALIDATION AND LOCKING
-        // ============================================================
         User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + currentUserId));
 
@@ -112,9 +94,6 @@ public class BookingServiceImpl implements BookingService {
             throw new DuplicateResourceException("You already have a booking during this time period");
         }
 
-        // ============================================================
-        // STEP 6: CHECK FOR RESOURCE CONFLICTS
-        // ============================================================
         boolean hasConflict = timeBlockRepository.existsOverlappingBlock(
                 request.getResourceId(),
                 request.getStartTime(),
@@ -125,10 +104,6 @@ public class BookingServiceImpl implements BookingService {
             log.warn("Booking conflict detected for resource {}. Creating waitlist entry in separate transaction.",
                     request.getResourceId());
 
-            // ============================================================
-            // CRITICAL: Create pending booking + waitlist in SEPARATE transaction
-            // This ensures they are saved even when we throw exception below
-            // ============================================================
             WaitlistService.PendingBookingResult result =
                     waitlistService.createPendingBookingAndWaitlistEntry(
                             resource,
@@ -141,9 +116,6 @@ public class BookingServiceImpl implements BookingService {
             // At this point, pending booking and waitlist entry are COMMITTED to database
             log.info("Pending booking and waitlist entry saved successfully. Building conflict response.");
 
-            // ============================================================
-            // Build detailed conflict response
-            // ============================================================
             BookingWithWaitlistResponse response = buildConflictResponseWithWaitlist(
                     resource,
                     request,
@@ -152,18 +124,12 @@ public class BookingServiceImpl implements BookingService {
                     conflictEndTime
             );
 
-            // ============================================================
-            // Throw exception with response (data already saved!)
-            // ============================================================
             throw new ResourceConflictException(
                     "Resource is not available. You've been automatically added to the waitlist.",
                     response
             );
         }
 
-        // ============================================================
-        // STEP 7: CREATE CONFIRMED BOOKING (NO CONFLICT)
-        // ============================================================
         ResourceTimeBlock booking = new ResourceTimeBlock();
         booking.setResource(resource);
         booking.setUser(user);
@@ -182,15 +148,6 @@ public class BookingServiceImpl implements BookingService {
 
         return mapper.toBookingResponse(saved);
     }
-
-    // ========================================================================
-    // WAITLIST INTEGRATION - HELPER METHODS
-    // ========================================================================
-
-    /**
-     * Build conflict response with waitlist information
-     * Called AFTER pending booking and waitlist entry are already saved
-     */
     private BookingWithWaitlistResponse buildConflictResponseWithWaitlist(
             Resource resource,
             CreateBookingRequest request,
@@ -199,27 +156,19 @@ public class BookingServiceImpl implements BookingService {
             Instant conflictEndTime) {
 
         try {
-            // ============================================================
-            // 1. GET CONFLICT DETAILS
-            // ============================================================
             List<ResourceTimeBlock> conflicts = timeBlockRepository.findOverlappingBlocks(
                     request.getResourceId(),
                     request.getStartTime(),
                     conflictEndTime
             );
 
-            // ============================================================
-            // 2. FIND ALTERNATIVES (optional - can be empty list)
-            // ============================================================
             List<Resource> alternatives = findAlternativeResources(
                     resource,
                     request.getStartTime(),
                     conflictEndTime
             );
 
-            // ============================================================
-            // 3. FIND NEXT AVAILABLE SLOTS (optional - can be empty list)
-            // ============================================================
+
             List<BookingConflictResponseDTO.TimeSlotSuggestion> suggestedSlots =
                     findNextAvailableSlots(
                             resource,
@@ -229,17 +178,10 @@ public class BookingServiceImpl implements BookingService {
                             3
                     );
 
-            // ============================================================
-            // 4. BUILD USER-FRIENDLY MESSAGE
-            // ============================================================
             String message = buildWaitlistAutoJoinMessage(
                     result.queuePosition(),
                     alternatives.size()
             );
-
-            // ============================================================
-            // 5. BUILD RESPONSE
-            // ============================================================
             return BookingWithWaitlistResponse.builder()
 //                    .pendingBooking(mapper.toBookingResponse(result.pendingBooking()))
                     .waitlistEntry(WaitlistEntryResponseDTO.builder()
@@ -288,9 +230,6 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    /**
-     * Build user-friendly message for auto-join waitlist
-     */
     private String buildWaitlistAutoJoinMessage(Integer queuePosition, int alternativesCount) {
         StringBuilder message = new StringBuilder();
 
@@ -310,9 +249,6 @@ public class BookingServiceImpl implements BookingService {
         return message.toString();
     }
 
-    /**
-     * Find alternative available resources similar to the requested one
-     */
     private List<Resource> findAlternativeResources(
             Resource requestedResource,
             Instant startTime,
@@ -332,9 +268,7 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    /**
-     * Find next available time slots for a specific resource
-     */
+
     private List<BookingConflictResponseDTO.TimeSlotSuggestion> findNextAvailableSlots(
             Resource resource,
             Instant requestedStart,
@@ -376,9 +310,6 @@ public class BookingServiceImpl implements BookingService {
         return suggestions;
     }
 
-    /**
-     * Calculate human-readable availability label
-     */
     private String calculateAvailabilityLabel(Instant slotTime, Instant requestedTime) {
         long hoursDiff = Duration.between(requestedTime, slotTime).toHours();
 
@@ -390,9 +321,6 @@ public class BookingServiceImpl implements BookingService {
         return String.format("Available in %d %s", daysDiff, daysDiff == 1 ? "day" : "days");
     }
 
-    /**
-     * Helper to map block to conflict DTO
-     */
     private BookingConflictResponseDTO.ConflictingBooking toConflictingBookingDTO(ResourceTimeBlock block) {
         return BookingConflictResponseDTO.ConflictingBooking.builder()
                 .bookingId(block.getId())
@@ -401,9 +329,6 @@ public class BookingServiceImpl implements BookingService {
                 .bookedBy(block.getUser() != null ? block.getUser().getDisplayName() : "System")  // ✅ CORRECT FIELD NAME
                 .build();
     }
-    /**
-     * Convert Resource entity to ResourceResponse
-     */
     private ResourceResponse toResourceResponseDTO(Resource resource) {
         return ResourceResponse.builder()
                 .id(resource.getId())
@@ -418,9 +343,6 @@ public class BookingServiceImpl implements BookingService {
                 .build();
     }
 
-    // ========================================================================
-    // READ OPERATIONS
-    // ========================================================================
 
     @Override
     @Transactional(readOnly = true)
@@ -631,9 +553,7 @@ public class BookingServiceImpl implements BookingService {
                 .build();
     }
 
-    // ========================================================================
-    // DELETE OPERATION - CANCEL BOOKING
-    // ========================================================================
+
 
     @Override
     @Transactional
@@ -646,7 +566,6 @@ public class BookingServiceImpl implements BookingService {
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + currentUserId));
 
-        // Authorization check
         if (!booking.getUser().getId().equals(currentUserId) && currentUser.getRole() != Role.SYSTEM_ADMIN && currentUser.getDepartment().getId()!=booking.getResource().getOwningDepartment().getId()) {
             throw new AuthorizationException("You can only cancel your own bookings");
         }
@@ -659,7 +578,6 @@ public class BookingServiceImpl implements BookingService {
             throw new ValidationException("Cannot cancel past bookings");
         }
 
-        // Cancel booking
         Instant now = Instant.now();
         int updatedRows = timeBlockRepository.cancelBooking(bookingId, now);
 
@@ -677,9 +595,6 @@ public class BookingServiceImpl implements BookingService {
         );
 
 
-        // ============================================================
-        // ✅ NEW: Trigger waitlist offer processing
-        // ============================================================
         try {
             log.info("Checking waitlist for cancelled slot: resource={}", booking.getResource().getId());
 
@@ -710,9 +625,6 @@ public class BookingServiceImpl implements BookingService {
         // Format: "Jan 15, 2PM-3PM"
         return start.toString() + " - " + end.toString(); // Improve formatting as needed
     }
-    // ========================================================================
-    // AUTHORIZATION HELPER METHODS
-    // ========================================================================
 
     private void validateBookingAccess(ResourceTimeBlock booking, UUID currentUserId) {
         User currentUser = userRepository.findById(currentUserId)
@@ -753,13 +665,6 @@ public class BookingServiceImpl implements BookingService {
                 currentUserId, resource.getId());
     }
     // Add to class-level dependencies
-
-// Update constructor (Lombok @RequiredArgsConstructor handles this automatically)
-
-// ========================================================================
-// CREATE RECURRING BOOKING
-// ========================================================================
-
     @Override
     @Transactional
     public RecurringBookingResponse createRecurringBooking(
@@ -769,7 +674,6 @@ public class BookingServiceImpl implements BookingService {
         log.info("Creating recurring booking: pattern={}, resource={}, user={}",
                 request.getPattern(), request.getResourceId(), currentUserId);
 
-        // ===== STEP 1: VALIDATE USER & RESOURCE =====
         User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + currentUserId));
 
@@ -790,7 +694,6 @@ public class BookingServiceImpl implements BookingService {
             );
         }
 
-        // ===== STEP 2: GENERATE OCCURRENCES (in user's timezone) =====
         List<LocalDateTime> occurrencesIST = recurrenceGenerator.generateOccurrences(request);
 
         if (occurrencesIST.isEmpty()) {
@@ -799,7 +702,6 @@ public class BookingServiceImpl implements BookingService {
 
         log.info("Generated {} occurrence dates", occurrencesIST.size());
 
-        // ===== STEP 3: CONVERT TO UTC & CHECK CONFLICTS =====
         UUID seriesId = UUID.randomUUID();
         Duration bookingDuration = Duration.between(request.getStartTime(), request.getEndTime());
         int bufferMinutes = request.getBufferMinutes() != null ? request.getBufferMinutes() : 15;
@@ -857,7 +759,6 @@ public class BookingServiceImpl implements BookingService {
             );
         }
 
-        // ===== STEP 5: CREATE BOOKINGS (batch) =====
         List<ResourceTimeBlock> createdBookings = new ArrayList<>();
 
         for (BookingOccurrence occ : toCreate) {
@@ -888,7 +789,6 @@ public class BookingServiceImpl implements BookingService {
         log.info("Recurring booking series created: seriesId={}, created={} out of {} (skipped {} conflicts)",
                 seriesId, savedBookings.size(), occurrences.size(), conflicts.size());
 
-        // ===== STEP 6: BUILD RESPONSE =====
         return RecurringBookingResponse.builder()
                 .recurringSeriesId(seriesId)
                 .pattern(request.getPattern())
@@ -904,9 +804,6 @@ public class BookingServiceImpl implements BookingService {
                 .build();
     }
 
-// ========================================================================
-// GET RECURRING SERIES BOOKINGS
-// ========================================================================
 
     @Override
     @Transactional(readOnly = true)
@@ -940,9 +837,6 @@ public class BookingServiceImpl implements BookingService {
                 .build();
     }
 
-// ========================================================================
-// CANCEL RECURRING SERIES
-// ========================================================================
 
     @Override
     @Transactional
@@ -982,9 +876,6 @@ public class BookingServiceImpl implements BookingService {
                 .build();
     }
 
-// ========================================================================
-// HELPER CLASSES & METHODS
-// ========================================================================
 
     /**
      * Internal class to track each occurrence during creation
@@ -1000,9 +891,6 @@ public class BookingServiceImpl implements BookingService {
         private boolean hasUserConflict;
     }
 
-    /**
-     * Build conflict details for response
-     */
     private List<RecurringBookingResponse.ConflictDetail> buildConflictDetails(List<BookingOccurrence> conflicts) {
         return conflicts.stream()
                 .map(occ -> RecurringBookingResponse.ConflictDetail.builder()
@@ -1016,9 +904,6 @@ public class BookingServiceImpl implements BookingService {
                 .toList();
     }
 
-    /**
-     * Build user-friendly success message
-     */
     private String buildSuccessMessage(int created, int skipped, int total) {
         if (skipped == 0) {
             return String.format("Successfully created all %d recurring bookings!", total);
