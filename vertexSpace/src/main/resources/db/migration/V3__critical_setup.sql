@@ -88,101 +88,143 @@ CREATE INDEX IF NOT EXISTS idx_timeblocks_conflict_check
 -- ============================================================================
 
 DO $$
-DECLARE
-    -- Building IDs
-building_tower_a_id UUID := gen_random_uuid();
-    building_tower_b_id UUID := gen_random_uuid();
-    building_annex_id UUID := gen_random_uuid();
-
-    -- Floor IDs
-    floor_ta_1_id UUID := gen_random_uuid();
-    floor_ta_2_id UUID := gen_random_uuid();
-    floor_ta_3_id UUID := gen_random_uuid();
-    floor_tb_1_id UUID := gen_random_uuid();
-    floor_tb_2_id UUID := gen_random_uuid();
-    floor_annex_gf_id UUID := gen_random_uuid();
-
-    -- Department IDs
-    dept_eng_id UUID;
-    dept_hr_id UUID;
-    dept_it_id UUID;
-    dept_sales_id UUID;
-    dept_marketing_id UUID;
-
 BEGIN
-    -- ========================================================================
-    -- Get existing department IDs
-    -- ========================================================================
-SELECT id INTO dept_eng_id FROM departments WHERE code = 'ENG';
-SELECT id INTO dept_hr_id FROM departments WHERE code = 'HR';
-SELECT id INTO dept_it_id FROM departments WHERE code = 'IT';
-SELECT id INTO dept_sales_id FROM departments WHERE code = 'SALES';
-SELECT id INTO dept_marketing_id FROM departments WHERE code = 'MARKETING';
+    -- Ensure required departments exist (idempotent for existing production data)
+    INSERT INTO departments (id, code, name, is_active, created_at_utc)
+    VALUES
+        (gen_random_uuid(), 'ENG', 'Engineering', TRUE, NOW()),
+        (gen_random_uuid(), 'HR', 'Human Resources', TRUE, NOW()),
+        (gen_random_uuid(), 'IT', 'Information Technology', TRUE, NOW()),
+        (gen_random_uuid(), 'SALES', 'Sales', TRUE, NOW()),
+        (gen_random_uuid(), 'MARKETING', 'Marketing', TRUE, NOW())
+    ON CONFLICT (code)
+    DO UPDATE SET
+        name = EXCLUDED.name,
+        is_active = TRUE;
 
--- ========================================================================
--- Insert Buildings
--- ========================================================================
-INSERT INTO buildings (id, name, address, city, state, zip_code, country, is_active, created_at_utc) VALUES
-                                                                                                         (building_tower_a_id, 'Tower A', '123 Main Street', 'New York', 'NY', '10001', 'USA', TRUE, NOW()),
-                                                                                                         (building_tower_b_id, 'Tower B', '125 Main Street', 'New York', 'NY', '10001', 'USA', TRUE, NOW()),
-                                                                                                         (building_annex_id, 'Annex Building', '200 Park Avenue', 'New York', 'NY', '10002', 'USA', TRUE, NOW());
+    -- Insert buildings only when missing
+    INSERT INTO buildings (id, name, address, city, state, zip_code, country, is_active, created_at_utc)
+    SELECT gen_random_uuid(), 'Tower A', '123 Main Street', 'New York', 'NY', '10001', 'USA', TRUE, NOW()
+    WHERE NOT EXISTS (
+        SELECT 1 FROM buildings b WHERE b.name = 'Tower A' AND b.address = '123 Main Street'
+    );
 
--- ========================================================================
--- Insert Floors
--- ========================================================================
-INSERT INTO floors (id, building_id, floor_number, floor_name, is_active, created_at_utc) VALUES
-                                                                                              -- Tower A
-                                                                                              (floor_ta_1_id, building_tower_a_id, 1, '1st Floor', TRUE, NOW()),
-                                                                                              (floor_ta_2_id, building_tower_a_id, 2, '2nd Floor', TRUE, NOW()),
-                                                                                              (floor_ta_3_id, building_tower_a_id, 3, '3rd Floor', TRUE, NOW()),
+    INSERT INTO buildings (id, name, address, city, state, zip_code, country, is_active, created_at_utc)
+    SELECT gen_random_uuid(), 'Tower B', '125 Main Street', 'New York', 'NY', '10001', 'USA', TRUE, NOW()
+    WHERE NOT EXISTS (
+        SELECT 1 FROM buildings b WHERE b.name = 'Tower B' AND b.address = '125 Main Street'
+    );
 
-                                                                                              -- Tower B
-                                                                                              (floor_tb_1_id, building_tower_b_id, 1, '1st Floor', TRUE, NOW()),
-                                                                                              (floor_tb_2_id, building_tower_b_id, 2, '2nd Floor', TRUE, NOW()),
+    INSERT INTO buildings (id, name, address, city, state, zip_code, country, is_active, created_at_utc)
+    SELECT gen_random_uuid(), 'Annex Building', '200 Park Avenue', 'New York', 'NY', '10002', 'USA', TRUE, NOW()
+    WHERE NOT EXISTS (
+        SELECT 1 FROM buildings b WHERE b.name = 'Annex Building' AND b.address = '200 Park Avenue'
+    );
 
-                                                                                              -- Annex
-                                                                                              (floor_annex_gf_id, building_annex_id, 0, 'Ground Floor', TRUE, NOW());
+    -- Insert floors only when missing
+    INSERT INTO floors (id, building_id, floor_number, floor_name, is_active, created_at_utc)
+    SELECT gen_random_uuid(), b.id, 1, '1st Floor', TRUE, NOW()
+    FROM buildings b
+    WHERE b.name = 'Tower A'
+      AND NOT EXISTS (
+        SELECT 1 FROM floors f WHERE f.building_id = b.id AND f.floor_number = 1
+    );
 
--- ========================================================================
--- Insert Resources (Mix of ROOM, DESK, PARKING)
--- ========================================================================
+    INSERT INTO floors (id, building_id, floor_number, floor_name, is_active, created_at_utc)
+    SELECT gen_random_uuid(), b.id, 2, '2nd Floor', TRUE, NOW()
+    FROM buildings b
+    WHERE b.name = 'Tower A'
+      AND NOT EXISTS (
+        SELECT 1 FROM floors f WHERE f.building_id = b.id AND f.floor_number = 2
+    );
 
--- Tower A - 1st Floor (Engineering)
-INSERT INTO resources (floor_id, owning_department_id, resource_type, name, capacity, description, is_active, created_at_utc) VALUES
-                                                                                                                                  (floor_ta_1_id, dept_eng_id, 'ROOM', 'Conference Room A101', 10, 'Large conference room with projector', TRUE, NOW()),
-                                                                                                                                  (floor_ta_1_id, dept_eng_id, 'ROOM', 'Conference Room A102', 6, 'Small meeting room', TRUE, NOW()),
-                                                                                                                                  (floor_ta_1_id, dept_eng_id, 'DESK', 'Desk A-101', NULL, 'Hot desk near window', TRUE, NOW()),
-                                                                                                                                  (floor_ta_1_id, dept_eng_id, 'DESK', 'Desk A-102', NULL, 'Hot desk in quiet zone', TRUE, NOW()),
-                                                                                                                                  (floor_ta_1_id, dept_eng_id, 'DESK', 'Desk A-103', NULL, 'Hot desk with dual monitors', TRUE, NOW());
+    INSERT INTO floors (id, building_id, floor_number, floor_name, is_active, created_at_utc)
+    SELECT gen_random_uuid(), b.id, 3, '3rd Floor', TRUE, NOW()
+    FROM buildings b
+    WHERE b.name = 'Tower A'
+      AND NOT EXISTS (
+        SELECT 1 FROM floors f WHERE f.building_id = b.id AND f.floor_number = 3
+    );
 
--- Tower A - 2nd Floor (HR)
-INSERT INTO resources (floor_id, owning_department_id, resource_type, name, capacity, description, is_active, created_at_utc) VALUES
-                                                                                                                                  (floor_ta_2_id, dept_hr_id, 'ROOM', 'Interview Room A201', 4, 'Private interview room', TRUE, NOW()),
-                                                                                                                                  (floor_ta_2_id, dept_hr_id, 'ROOM', 'Training Room A202', 20, 'Large training room with whiteboard', TRUE, NOW()),
-                                                                                                                                  (floor_ta_2_id, dept_hr_id, 'DESK', 'Desk A-201', NULL, 'Hot desk for visitors', TRUE, NOW());
+    INSERT INTO floors (id, building_id, floor_number, floor_name, is_active, created_at_utc)
+    SELECT gen_random_uuid(), b.id, 1, '1st Floor', TRUE, NOW()
+    FROM buildings b
+    WHERE b.name = 'Tower B'
+      AND NOT EXISTS (
+        SELECT 1 FROM floors f WHERE f.building_id = b.id AND f.floor_number = 1
+    );
 
--- Tower A - 3rd Floor (IT)
-INSERT INTO resources (floor_id, owning_department_id, resource_type, name, capacity, description, is_active, created_at_utc) VALUES
-                                                                                                                                  (floor_ta_3_id, dept_it_id, 'ROOM', 'Server Room A301', 4, 'Restricted access server room', TRUE, NOW()),
-                                                                                                                                  (floor_ta_3_id, dept_it_id, 'DESK', 'Desk A-301', NULL, 'Hot desk with extra power outlets', TRUE, NOW());
+    INSERT INTO floors (id, building_id, floor_number, floor_name, is_active, created_at_utc)
+    SELECT gen_random_uuid(), b.id, 2, '2nd Floor', TRUE, NOW()
+    FROM buildings b
+    WHERE b.name = 'Tower B'
+      AND NOT EXISTS (
+        SELECT 1 FROM floors f WHERE f.building_id = b.id AND f.floor_number = 2
+    );
 
--- Tower B - 1st Floor (Sales)
-INSERT INTO resources (floor_id, owning_department_id, resource_type, name, capacity, description, is_active, created_at_utc) VALUES
-                                                                                                                                  (floor_tb_1_id, dept_sales_id, 'ROOM', 'Conference Room B101', 8, 'Client meeting room', TRUE, NOW()),
-                                                                                                                                  (floor_tb_1_id, dept_sales_id, 'DESK', 'Desk B-101', NULL, 'Hot desk in sales area', TRUE, NOW()),
-                                                                                                                                  (floor_tb_1_id, dept_sales_id, 'DESK', 'Desk B-102', NULL, 'Hot desk near coffee station', TRUE, NOW());
+    INSERT INTO floors (id, building_id, floor_number, floor_name, is_active, created_at_utc)
+    SELECT gen_random_uuid(), b.id, 0, 'Ground Floor', TRUE, NOW()
+    FROM buildings b
+    WHERE b.name = 'Annex Building'
+      AND NOT EXISTS (
+        SELECT 1 FROM floors f WHERE f.building_id = b.id AND f.floor_number = 0
+    );
 
--- Tower B - 2nd Floor (Marketing)
-INSERT INTO resources (floor_id, owning_department_id, resource_type, name, capacity, description, is_active, created_at_utc) VALUES
-                                                                                                                                  (floor_tb_2_id, dept_marketing_id, 'ROOM', 'Creative Studio B201', 12, 'Open studio with design tools', TRUE, NOW()),
-                                                                                                                                  (floor_tb_2_id, dept_marketing_id, 'DESK', 'Desk B-201', NULL, 'Collaboration desk', TRUE, NOW());
-
--- Annex - Ground Floor (Parking)
-INSERT INTO resources (floor_id, owning_department_id, resource_type, name, capacity, description, is_active, created_at_utc) VALUES
-                                                                                                                                  (floor_annex_gf_id, dept_eng_id, 'PARKING', 'Parking Spot P1', NULL, 'Covered parking near entrance', TRUE, NOW()),
-                                                                                                                                  (floor_annex_gf_id, dept_eng_id, 'PARKING', 'Parking Spot P2', NULL, 'Covered parking', TRUE, NOW()),
-                                                                                                                                  (floor_annex_gf_id, dept_eng_id, 'PARKING', 'Parking Spot P3', NULL, 'Open parking', TRUE, NOW()),
-                                                                                                                                  (floor_annex_gf_id, dept_eng_id, 'PARKING', 'Parking Spot P4', NULL, 'Open parking', TRUE, NOW());
+    -- Insert resources only when missing for a floor
+    INSERT INTO resources (
+        id,
+        floor_id,
+        owning_department_id,
+        resource_type,
+        assignment_mode,
+        name,
+        capacity,
+        description,
+        is_active,
+        created_at_utc
+    )
+    SELECT
+        gen_random_uuid(),
+        f.id,
+        d.id,
+        x.resource_type,
+        x.assignment_mode,
+        x.resource_name,
+        x.capacity,
+        x.description,
+        TRUE,
+        NOW()
+    FROM (
+        VALUES
+            ('Tower A', 1, 'ENG', 'ROOM', 'NOT_APPLICABLE', 'Conference Room A101', 10, 'Large conference room with projector'),
+            ('Tower A', 1, 'ENG', 'ROOM', 'NOT_APPLICABLE', 'Conference Room A102', 6, 'Small meeting room'),
+            ('Tower A', 1, 'ENG', 'DESK', 'HOT_DESK', 'Desk A-101', NULL, 'Hot desk near window'),
+            ('Tower A', 1, 'ENG', 'DESK', 'HOT_DESK', 'Desk A-102', NULL, 'Hot desk in quiet zone'),
+            ('Tower A', 1, 'ENG', 'DESK', 'HOT_DESK', 'Desk A-103', NULL, 'Hot desk with dual monitors'),
+            ('Tower A', 2, 'HR', 'ROOM', 'NOT_APPLICABLE', 'Interview Room A201', 4, 'Private interview room'),
+            ('Tower A', 2, 'HR', 'ROOM', 'NOT_APPLICABLE', 'Training Room A202', 20, 'Large training room with whiteboard'),
+            ('Tower A', 2, 'HR', 'DESK', 'HOT_DESK', 'Desk A-201', NULL, 'Hot desk for visitors'),
+            ('Tower A', 3, 'IT', 'ROOM', 'NOT_APPLICABLE', 'Server Room A301', 4, 'Restricted access server room'),
+            ('Tower A', 3, 'IT', 'DESK', 'HOT_DESK', 'Desk A-301', NULL, 'Hot desk with extra power outlets'),
+            ('Tower B', 1, 'SALES', 'ROOM', 'NOT_APPLICABLE', 'Conference Room B101', 8, 'Client meeting room'),
+            ('Tower B', 1, 'SALES', 'DESK', 'HOT_DESK', 'Desk B-101', NULL, 'Hot desk in sales area'),
+            ('Tower B', 1, 'SALES', 'DESK', 'HOT_DESK', 'Desk B-102', NULL, 'Hot desk near coffee station'),
+            ('Tower B', 2, 'MARKETING', 'ROOM', 'NOT_APPLICABLE', 'Creative Studio B201', 12, 'Open studio with design tools'),
+            ('Tower B', 2, 'MARKETING', 'DESK', 'HOT_DESK', 'Desk B-201', NULL, 'Collaboration desk'),
+            ('Annex Building', 0, 'ENG', 'PARKING', 'NOT_APPLICABLE', 'Parking Spot P1', NULL, 'Covered parking near entrance'),
+            ('Annex Building', 0, 'ENG', 'PARKING', 'NOT_APPLICABLE', 'Parking Spot P2', NULL, 'Covered parking'),
+            ('Annex Building', 0, 'ENG', 'PARKING', 'NOT_APPLICABLE', 'Parking Spot P3', NULL, 'Open parking'),
+            ('Annex Building', 0, 'ENG', 'PARKING', 'NOT_APPLICABLE', 'Parking Spot P4', NULL, 'Open parking')
+    ) AS x(building_name, floor_number, department_code, resource_type, assignment_mode, resource_name, capacity, description)
+    JOIN buildings b ON b.name = x.building_name
+    JOIN floors f ON f.building_id = b.id AND f.floor_number = x.floor_number
+    JOIN departments d ON d.code = x.department_code
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM resources r
+        WHERE r.floor_id = f.id
+          AND r.name = x.resource_name
+    );
 
 END $$;
 
