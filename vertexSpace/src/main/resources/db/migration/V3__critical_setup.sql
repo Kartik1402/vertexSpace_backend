@@ -5,7 +5,94 @@
 -- ============================================================================
 
 -- Enable btree_gist extension (required for exclusion constraint)
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE EXTENSION IF NOT EXISTS btree_gist;
+
+-- Bootstrap the core schema when deploying to a blank database.
+-- Flyway runs before Hibernate in Render, so these tables must exist before
+-- the ALTER TABLE and seed statements below can succeed.
+CREATE TABLE IF NOT EXISTS departments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(100) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at_utc TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at_utc TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS buildings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL,
+    address TEXT NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    state VARCHAR(50) NOT NULL,
+    zip_code VARCHAR(20),
+    country VARCHAR(100) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at_utc TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at_utc TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS floors (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    building_id UUID NOT NULL REFERENCES buildings(id),
+    floor_number INTEGER NOT NULL,
+    floor_name VARCHAR(100) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at_utc TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at_utc TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS resources (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    floor_id UUID NOT NULL REFERENCES floors(id),
+    owning_department_id UUID NOT NULL REFERENCES departments(id),
+    resource_type VARCHAR(20) NOT NULL,
+    assignment_mode VARCHAR(20) NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    capacity INTEGER,
+    description TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at_utc TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at_utc TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    display_name VARCHAR(100) NOT NULL,
+    role VARCHAR(20) NOT NULL,
+    department_id UUID NOT NULL REFERENCES departments(id),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at_utc TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at_utc TIMESTAMPTZ,
+    last_login_utc TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS resource_time_blocks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    resource_id UUID NOT NULL REFERENCES resources(id),
+    user_id UUID NOT NULL REFERENCES users(id),
+    block_type VARCHAR(20) NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    start_time_utc TIMESTAMPTZ NOT NULL,
+    end_time_utc TIMESTAMPTZ NOT NULL,
+    conflict_end_utc TIMESTAMPTZ NOT NULL,
+    buffer_minutes INTEGER NOT NULL DEFAULT 15,
+    purpose TEXT,
+    waitlist_entry_id UUID,
+    expires_at_utc TIMESTAMPTZ,
+    responded_at TIMESTAMPTZ,
+    notes VARCHAR(500),
+    created_at_utc TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at_utc TIMESTAMPTZ,
+    recurring_series_id UUID,
+    is_recurring BOOLEAN NOT NULL DEFAULT FALSE,
+    recurrence_pattern VARCHAR(20),
+    occurrence_number INTEGER,
+    original_timezone VARCHAR(50) DEFAULT 'Asia/Kolkata'
+);
 
 -- ============================================================================
 -- CRITICAL: Exclusion Constraint (Prevents Double Bookings!)
