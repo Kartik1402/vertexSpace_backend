@@ -42,18 +42,19 @@ public class SecurityConfig {
                         // ============================================================
 
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/", "/error", "/favicon.ico").permitAll()
                         .requestMatchers("/actuator/health", "/health").permitAll()
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/swagger-resources/**",
-                                "/webjars/**"
-                        ).permitAll()
+                                "/webjars/**")
+                        .permitAll()
                         .requestMatchers("/api/v1/auth/login").permitAll()
-                        .requestMatchers("api/v1/auth/register").permitAll()
+                        .requestMatchers("/api/v1/auth/register").permitAll()
                         .requestMatchers("/api/v1/auth/me").authenticated()
-                        .requestMatchers("api/v1/auth/logout").authenticated()
+                        .requestMatchers("/api/v1/auth/logout").authenticated()
 
                         // ============================================================
                         // BUILDINGS
@@ -77,19 +78,25 @@ public class SecurityConfig {
                         // RESOURCES
                         // ============================================================
 
-                        .requestMatchers(HttpMethod.POST, "/api/v1/resources/**").hasAnyRole("SYSTEM_ADMIN", "DEPT_ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/resources/**").hasAnyRole("SYSTEM_ADMIN", "DEPT_ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/resources/**").hasAnyRole("SYSTEM_ADMIN", "DEPT_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/resources/**")
+                        .hasAnyRole("SYSTEM_ADMIN", "DEPT_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/resources/**")
+                        .hasAnyRole("SYSTEM_ADMIN", "DEPT_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/resources/**")
+                        .hasAnyRole("SYSTEM_ADMIN", "DEPT_ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/v1/resources/**").authenticated()
 
                         // ============================================================
                         // BOOKINGS (order matters)
                         // ============================================================
 
-                        .requestMatchers(HttpMethod.GET, "/api/v1/bookings/all").hasAnyRole("SYSTEM_ADMIN","DEPT_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/bookings/all")
+                        .hasAnyRole("SYSTEM_ADMIN", "DEPT_ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/v1/bookings/user/**").hasRole("SYSTEM_ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/bookings/resource/**").hasAnyRole("SYSTEM_ADMIN", "DEPT_ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/bookings/department/**").hasAnyRole("SYSTEM_ADMIN", "DEPT_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/bookings/resource/**")
+                        .hasAnyRole("SYSTEM_ADMIN", "DEPT_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/bookings/department/**")
+                        .hasAnyRole("SYSTEM_ADMIN", "DEPT_ADMIN")
 
                         .requestMatchers(HttpMethod.POST, "/api/v1/bookings").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/bookings/my-bookings/**").authenticated()
@@ -106,18 +113,22 @@ public class SecurityConfig {
                         // WAITLIST (legacy paths)
                         // ============================================================
 
-                        .requestMatchers(HttpMethod.GET, "/api/v1/waitlist/all").hasAnyRole("SYSTEM_ADMIN", "DEPT_ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/waitlist/resource/**").hasAnyRole("SYSTEM_ADMIN", "DEPT_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/waitlist/all")
+                        .hasAnyRole("SYSTEM_ADMIN", "DEPT_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/waitlist/resource/**")
+                        .hasAnyRole("SYSTEM_ADMIN", "DEPT_ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/waitlist").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/waitlist/my-entries").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/waitlist/*").authenticated()
 
                         // ============================================================
-                        // WAITLIST-ENTRIES (new paths)  ✅ includes /me
+                        // WAITLIST-ENTRIES (new paths) ✅ includes /me
                         // ============================================================
 
-                        .requestMatchers(HttpMethod.GET, "/api/v1/waitlist-entries/all").hasAnyRole("SYSTEM_ADMIN", "DEPT_ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/waitlist-entries/resource/**").hasAnyRole("SYSTEM_ADMIN", "DEPT_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/waitlist-entries/all")
+                        .hasAnyRole("SYSTEM_ADMIN", "DEPT_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/waitlist-entries/resource/**")
+                        .hasAnyRole("SYSTEM_ADMIN", "DEPT_ADMIN")
 
                         .requestMatchers(HttpMethod.POST, "/api/v1/waitlist-entries").authenticated()
 
@@ -143,8 +154,7 @@ public class SecurityConfig {
                         // CATCH-ALL
                         // ============================================================
 
-                        .anyRequest().authenticated()
-                )
+                        .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
