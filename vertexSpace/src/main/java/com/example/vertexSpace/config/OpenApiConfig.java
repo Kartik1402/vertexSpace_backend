@@ -7,21 +7,11 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
-import io.swagger.v3.oas.models.servers.Server;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.List;
-
 @Configuration
 public class OpenApiConfig {
-
-        @Value("${spring.application.name:VertexSpace Booking System}")
-        private String applicationName;
-
-        @Value("${app.public-base-url:}")
-        private String publicBaseUrl;
 
         @Bean
         public OpenAPI customOpenAPI() {
@@ -41,16 +31,6 @@ public class OpenApiConfig {
                                                 .license(new License()
                                                                 .name("Apache 2.0")
                                                                 .url("https://www.apache.org/licenses/LICENSE-2.0.html")))
-
-                                // ============================================================
-                                // SERVER URLS
-                                // ============================================================
-                                .servers(List.of(
-                                                new Server()
-                                                                .url(publicBaseUrl == null || publicBaseUrl.isBlank()
-                                                                                ? "/"
-                                                                                : publicBaseUrl)
-                                                                .description("Runtime Server")))
 
                                 // ============================================================
                                 // SECURITY CONFIGURATION
